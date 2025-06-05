@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import ProductCard from '../components/ProductCard';
-import SearchBar from '../components/SearchBar';
+// Remove SearchBar import as we don't need it here anymore
+// import SearchBar from '../components/SearchBar';
 import { searchProducts, Product } from '../services/api';
 import { FaFilter, FaSort } from 'react-icons/fa';
 
@@ -108,12 +109,9 @@ const SearchPage: React.FC = () => {
   };
 
   return (
-    <Layout>
+    <Layout searchQuery={q as string}>
       <div className="container mx-auto px-4 py-8">
-        {/* Add SearchBar with initial query */}
-        <div className="mb-8">
-          <SearchBar initialQuery={q as string} />
-        </div>
+        {/* Remove the SearchBar component from here */}
         
         <div className="flex justify-between items-center mb-8">
           <div>

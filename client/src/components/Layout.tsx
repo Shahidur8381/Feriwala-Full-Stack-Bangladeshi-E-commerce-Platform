@@ -4,15 +4,14 @@ import Footer from './Footer';
 
 interface LayoutProps {
   children: ReactNode;
+  searchQuery?: string;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ children, searchQuery = '' }) => {
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-grow">
-        {children}
-      </main>
+      <Header searchQuery={searchQuery} />
+      <main className="flex-grow">{children}</main>
       <Footer />
     </div>
   );

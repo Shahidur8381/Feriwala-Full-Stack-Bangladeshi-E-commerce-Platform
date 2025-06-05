@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaFacebook, FaTwitter, FaInstagram } from 'react-icons/fa';
+import TimeDisplay from '@/components/TimeDisplay';
 
 const Footer: React.FC = () => {
   return (
@@ -42,6 +43,10 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-gray-700 mt-8 pt-6 text-center">
+          {/* Add TimeDisplay component here */}
+          <div className="mb-4">
+            <TimeDisplay />
+          </div>
           <p>Author: FeriWala</p>
           <p>&copy; {new Date().getFullYear()} FeriWala. All rights reserved.</p>
         </div>

@@ -3,7 +3,11 @@ import Link from 'next/link';
 import { FaShoppingCart, FaUser } from 'react-icons/fa';
 import SearchBar from './SearchBar';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  searchQuery?: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ searchQuery = '' }) => {
   return (
     <header className="bg-white shadow-md py-4 px-6 sticky top-0 z-10">
       <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
@@ -14,7 +18,7 @@ const Header: React.FC = () => {
         </div>
         
         <div className="w-full md:w-1/2 mb-4 md:mb-0">
-          <SearchBar />
+          <SearchBar initialQuery={searchQuery} />
         </div>
         
         <div className="flex items-center space-x-4">
