@@ -11,6 +11,9 @@ import dotenv from 'dotenv';
 
 import createSellerRoutes from './routes/sellerRoutes.js';
 import createProductRoutes from './routes/productRoutes.js';
+import createOrderRoutes from './routes/orderRoutes.js';
+import createReviewRoutes from './routes/reviewRoutes.js';
+import createAdminRoutes from './routes/adminRoutes.js';
 import verifySellerJWT from './middleware/verifySellerJWT.js';
 
 dotenv.config();
@@ -123,6 +126,9 @@ db.serialize(() => { // Use db.serialize to ensure sequential execution for tabl
 // this makes GET /api/sellers (to fetch all sellers) available.
 app.use('/api/sellers', createSellerRoutes(db, process.env.JWT_SECRET || 'your_fallback_secret_key')); 
 app.use('/api/products', createProductRoutes(db, upload));
+app.use('/api/orders', createOrderRoutes(db));
+app.use('/api/reviews', createReviewRoutes(db));
+app.use('/api/admin', createAdminRoutes(db)); // Admin routes
 
 // Test protected route (ensure verifySellerJWT is correctly implemented)
 app.get('/api/test-protected', verifySellerJWT, (req, res) => {

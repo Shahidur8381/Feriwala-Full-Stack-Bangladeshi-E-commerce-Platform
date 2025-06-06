@@ -1,4 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { useUser } from '@clerk/nextjs';
+import { useRouter } from 'next/router';
 import { Product } from '../services/api';
 
 interface CartItem extends Product {
@@ -31,6 +33,8 @@ interface CartProviderProps {
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { isSignedIn } = useUser();
+  const router = useRouter();
   
   // Load cart from localStorage on initial render
   useEffect(() => {
@@ -48,8 +52,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cartItems));
   }, [cartItems]);
-  
-  const addToCart = (product: Product, quantity: number) => {
+    const addToCart = (product: Product, quantity: number) => {
+    // Check if user is signed in before adding to cart
+    if (!isSignedIn) {
+      // Show alert and redirect to sign in
+      if (confirm('You need to sign in to add items to cart. Would you like to sign in now?')) {
+        router.push('/sign-in');
+      }
+      return;
+    }
+
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.id === product.id);
       

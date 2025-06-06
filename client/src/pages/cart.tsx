@@ -1,12 +1,36 @@
 import React from 'react';
 import Layout from '../components/Layout';
 import { useCart } from '../contexts/CartContext';
+import { useUser } from '@clerk/nextjs';
+import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FaTrash, FaMinus, FaPlus } from 'react-icons/fa';
 
 const CartPage: React.FC = () => {
   const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal } = useCart();
+  const { isLoaded, isSignedIn } = useUser();
+  const router = useRouter();
+
+  // Redirect if not signed in
+  React.useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push('/sign-in');
+    }
+  }, [isLoaded, isSignedIn, router]);
+
+  if (!isLoaded || !isSignedIn) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+            <div className="h-64 bg-gray-200 rounded-lg"></div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -155,10 +179,11 @@ const CartPage: React.FC = () => {
                   <span className="font-bold text-blue-600">${cartTotal.toFixed(2)}</span>
                 </div>
               </div>
-              
-              <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
-                Proceed to Checkout
-              </button>
+                <Link href="/checkout">
+                <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                  Proceed to Checkout
+                </button>
+              </Link>
               
               <div className="mt-4 text-center">
                 <Link href="/products" className="text-blue-600 hover:underline text-sm">
