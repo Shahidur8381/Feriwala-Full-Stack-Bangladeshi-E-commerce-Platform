@@ -130,9 +130,7 @@ const createOrderRoutes = (db) => {
         `);
 
         let itemsProcessed = 0;
-        let hasError = false;
-
-        items.forEach(item => {
+        let hasError = false;        items.forEach(item => {
           insertItem.run([orderId, item.id, item.title, item.price, item.quantity, item.image], function(err) {
             if (err && !hasError) {
               console.error('Error inserting order item:', err.message);
@@ -140,6 +138,17 @@ const createOrderRoutes = (db) => {
               db.run('ROLLBACK');
               return res.status(500).json({ error: 'Failed to create order items' });
             }
+
+            // Update product sold count
+            db.run(`
+              UPDATE products 
+              SET sold = CAST(sold AS INTEGER) + ? 
+              WHERE id = ?
+            `, [item.quantity, item.id], (updateErr) => {
+              if (updateErr) {
+                console.error('Error updating sold count:', updateErr.message);
+              }
+            });
 
             itemsProcessed++;
             if (itemsProcessed === items.length && !hasError) {

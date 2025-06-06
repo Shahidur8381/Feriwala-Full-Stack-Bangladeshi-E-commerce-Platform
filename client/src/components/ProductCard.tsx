@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '../services/api';
+import axios from 'axios';
 
 interface ProductCardProps {
   product: Product;
@@ -9,6 +10,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isDiscountValid, setIsDiscountValid] = useState(false);
+  const [reviewSummary, setReviewSummary] = useState({ totalReviews: 0, averageRating: 0 });
   const [remainingTime, setRemainingTime] = useState<{
     years: number;
     months: number;
@@ -19,7 +21,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   }>({ years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    // Check discount validity
+    // Fetch review summary for this product
+    const fetchReviewSummary = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/reviews/product/${product.id}/summary`);
+        setReviewSummary({
+          totalReviews: response.data.totalReviews || 0,
+          averageRating: response.data.averageRating || 0
+        });
+      } catch (error) {
+        console.error('Error fetching review summary:', error);
+      }
+    };
+
+    fetchReviewSummary();    // Check discount validity
     if (product.discount > 0 && product.discount_validity) {
       const validityDate = new Date(product.discount_validity);
       const today = new Date();
@@ -61,13 +76,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       }
     }
   }, [product]);
-
-  // Parse the rating object
+  // Parse the rating object - fallback to database values
   const ratingObj = JSON.parse(product.rating || '{}');
   const ratingValues = Object.values(ratingObj);
-  const averageRating = ratingValues.length > 0 
+  const legacyRating = ratingValues.length > 0 
     ? ratingValues.reduce((sum: number, val: any) => sum + Number(val), 0) / ratingValues.length 
     : 0;
+  
+  // Use database rating if available, otherwise fallback to legacy rating
+  const averageRating = reviewSummary.averageRating > 0 ? reviewSummary.averageRating : legacyRating;
+  const totalReviews = reviewSummary.totalReviews;
 
   // Create a valid image URL or use a fallback
   const imageUrl = product.image 
@@ -141,14 +159,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <span className="text-blue-600 font-bold">${product.price}</span>
               )}
             </div>
-            
-            <div className="flex items-center">
+              <div className="flex items-center">
               <span className="text-yellow-500 mr-1">★</span>
-              <span>{averageRating.toFixed(1)}</span>
+              <span className="text-sm">{averageRating.toFixed(1)}</span>
+              <span className="text-gray-400 text-xs ml-1">({totalReviews})</span>
             </div>
           </div>
+            <p className="text-sm text-gray-500 mt-2 truncate">{product.shopname}</p>
           
-          <p className="text-sm text-gray-500 mt-2 truncate">{product.shopname}</p>
+          <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+            <span>{product.sold} sold</span>
+            <span>{product.stock} in stock</span>
+          </div>
           
           {product.discount > 0 && isDiscountValid && (
             <p className="text-xs text-red-600 mt-1">

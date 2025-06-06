@@ -15,7 +15,7 @@ export interface Product {
   stock: number;
   deliverycharge_inside: number;
   deliverycharge_outside: number;
-  sold: string;
+  sold: number;
   rating: string;
   total_rating: string;
   reviews: string;

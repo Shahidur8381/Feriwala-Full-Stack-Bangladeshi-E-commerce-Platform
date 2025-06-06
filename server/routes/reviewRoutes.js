@@ -1,23 +1,25 @@
 import express from 'express';
 
 const createReviewRoutes = (db) => {
-  const router = express.Router();
-
-  // Submit a review
+  const router = express.Router();  // Submit a review
   router.post('/', (req, res) => {
-    const { productId, orderId, rating, comment } = req.body;
+    const { productId, orderId, rating, comment, customerEmail } = req.body;
 
-    if (!productId || !orderId || !rating || !comment) {
+    console.log('Review submission data:', { productId, orderId, rating, comment, customerEmail });
+
+    if (!productId || !orderId || !rating || !comment || !customerEmail) {
+      console.log('Missing required fields');
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     if (rating < 1 || rating > 5) {
+      console.log('Invalid rating:', rating);
       return res.status(400).json({ error: 'Rating must be between 1 and 5' });
     }
 
-    // Check if order exists and is delivered
+    // Check if order exists and belongs to the customer
     db.get(`
-      SELECT status FROM orders WHERE orderId = ?
+      SELECT status, customerEmail FROM orders WHERE orderId = ?
     `, [orderId], (err, order) => {
       if (err) {
         console.error('Error checking order:', err.message);
@@ -25,44 +27,172 @@ const createReviewRoutes = (db) => {
       }
 
       if (!order) {
+        console.log('Order not found:', orderId);
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      // For now, allow reviews for any order status (you can restrict to 'delivered' later)
-      // if (order.status !== 'delivered') {
-      //   return res.status(400).json({ error: 'Can only review delivered orders' });
-      // }
+      if (order.customerEmail !== customerEmail) {
+        console.log('Email mismatch:', order.customerEmail, 'vs', customerEmail);
+        return res.status(403).json({ error: 'Unauthorized to review this order' });
+      }
 
-      // Check if review already exists for this product and order
+      // Check if user has already reviewed this product (regardless of order)
       db.get(`
-        SELECT id FROM reviews WHERE productId = ? AND orderId = ?
-      `, [productId, orderId], (err, existingReview) => {
+        SELECT r.id FROM reviews r
+        JOIN orders o ON r.orderId = o.orderId
+        WHERE r.productId = ? AND o.customerEmail = ?
+      `, [productId, customerEmail], (err, existingReview) => {
         if (err) {
           console.error('Error checking existing review:', err.message);
           return res.status(500).json({ error: 'Failed to check existing review' });
         }
 
         if (existingReview) {
-          return res.status(400).json({ error: 'Review already exists for this product' });
+          console.log('Review already exists for product:', productId, 'by user:', customerEmail);
+          return res.status(400).json({ error: 'You have already reviewed this product' });
         }
 
-        // Insert review
-        db.run(`
-          INSERT INTO reviews (productId, orderId, rating, comment)
-          VALUES (?, ?, ?, ?)
-        `, [productId, orderId, rating, comment], function(err) {
+        // Check if the product was actually ordered in this order
+        db.get(`
+          SELECT id FROM order_items WHERE orderId = ? AND productId = ?
+        `, [orderId, productId], (err, orderItem) => {
           if (err) {
-            console.error('Error inserting review:', err.message);
-            return res.status(500).json({ error: 'Failed to submit review' });
+            console.error('Error checking order item:', err.message);
+            return res.status(500).json({ error: 'Failed to verify order item' });
           }
 
-          // Update product rating
-          updateProductRating(productId, db);
+          if (!orderItem) {
+            console.log('Product not found in order:', productId, 'in', orderId);
+            return res.status(400).json({ error: 'Product not found in this order' });
+          }
 
-          res.status(201).json({ 
-            id: this.lastID, 
-            message: 'Review submitted successfully' 
+          // Insert review
+          db.run(`
+            INSERT INTO reviews (productId, orderId, rating, comment)
+            VALUES (?, ?, ?, ?)
+          `, [productId, orderId, rating, comment], function(err) {
+            if (err) {
+              console.error('Error inserting review:', err.message);
+              return res.status(500).json({ error: 'Failed to submit review' });
+            }
+
+            console.log('Review submitted successfully:', this.lastID);
+            // Update product rating
+            updateProductRating(productId, db);
+
+            res.status(201).json({ 
+              id: this.lastID, 
+              message: 'Review submitted successfully' 
+            });
           });
+        });
+      });
+    });
+  });
+
+  // Update a review
+  router.put('/:reviewId', (req, res) => {
+    const { reviewId } = req.params;
+    const { rating, comment, customerEmail } = req.body;
+
+    if (!rating || !comment || !customerEmail) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+    }
+
+    // Check if review exists and belongs to the customer
+    db.get(`
+      SELECT r.*, o.customerEmail 
+      FROM reviews r
+      JOIN orders o ON r.orderId = o.orderId
+      WHERE r.id = ?
+    `, [reviewId], (err, review) => {
+      if (err) {
+        console.error('Error checking review:', err.message);
+        return res.status(500).json({ error: 'Failed to verify review' });
+      }
+
+      if (!review) {
+        return res.status(404).json({ error: 'Review not found' });
+      }
+
+      if (review.customerEmail !== customerEmail) {
+        return res.status(403).json({ error: 'Unauthorized to update this review' });
+      }
+
+      // Update review
+      db.run(`
+        UPDATE reviews 
+        SET rating = ?, comment = ?, createdAt = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `, [rating, comment, reviewId], function(err) {
+        if (err) {
+          console.error('Error updating review:', err.message);
+          return res.status(500).json({ error: 'Failed to update review' });
+        }
+
+        // Update product rating
+        updateProductRating(review.productId, db);
+
+        res.json({ 
+          message: 'Review updated successfully' 
+        });
+      });
+    });
+  });
+
+  // Get user's review for a specific product
+  router.get('/user/:customerEmail/product/:productId', (req, res) => {
+    const { customerEmail, productId } = req.params;
+
+    db.get(`
+      SELECT r.*, o.customerName 
+      FROM reviews r
+      JOIN orders o ON r.orderId = o.orderId
+      WHERE r.productId = ? AND o.customerEmail = ?
+    `, [productId, customerEmail], (err, review) => {
+      if (err) {
+        console.error('Error fetching user review:', err.message);
+        return res.status(500).json({ error: 'Failed to fetch review' });
+      }
+
+      res.json(review || null);
+    });
+  });
+
+  // Check if user can review a product
+  router.get('/can-review/:productId/:customerEmail', (req, res) => {
+    const { productId, customerEmail } = req.params;
+
+    // Check if user has already reviewed this product
+    db.get(`
+      SELECT r.id FROM reviews r
+      JOIN orders o ON r.orderId = o.orderId
+      WHERE r.productId = ? AND o.customerEmail = ?
+    `, [productId, customerEmail], (err, existingReview) => {
+      if (err) {
+        console.error('Error checking existing review:', err.message);
+        return res.status(500).json({ error: 'Failed to check review status' });
+      }
+
+      // Check if user has ordered this product
+      db.get(`
+        SELECT oi.id FROM order_items oi
+        JOIN orders o ON oi.orderId = o.orderId
+        WHERE oi.productId = ? AND o.customerEmail = ?
+      `, [productId, customerEmail], (err, orderItem) => {
+        if (err) {
+          console.error('Error checking order history:', err.message);
+          return res.status(500).json({ error: 'Failed to check order history' });
+        }
+
+        res.json({
+          canReview: !existingReview && !!orderItem,
+          hasOrdered: !!orderItem,
+          hasReviewed: !!existingReview
         });
       });
     });

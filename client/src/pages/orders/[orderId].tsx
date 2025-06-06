@@ -26,18 +26,30 @@ interface Order {
 }
 
 interface Review {
+  id?: number;
   productId: number;
   rating: number;
   comment: string;
+  isEdit?: boolean;
+}
+
+interface ExistingReview {
+  id: number;
+  productId: number;
+  orderId: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  customerName: string;
 }
 
 const OrderDetailsPage: React.FC = () => {
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
-  const { orderId } = router.query;
-  const [order, setOrder] = useState<Order | null>(null);
+  const { orderId } = router.query;  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<{ [key: number]: Review }>({});
+  const [existingReviews, setExistingReviews] = useState<{ [key: number]: ExistingReview }>({});
   const [submittingReview, setSubmittingReview] = useState<number | null>(null);
 
   // Redirect if not signed in
@@ -52,13 +64,39 @@ const OrderDetailsPage: React.FC = () => {
       fetchOrder(orderId);
     }
   }, [orderId]);
-
   const fetchOrder = async (orderIdParam: string) => {
     try {
       const response = await fetch(`http://localhost:5000/api/orders/${orderIdParam}`);
       if (response.ok) {
         const orderData = await response.json();
         setOrder(orderData);
+
+        // Fetch existing reviews for products in this order
+        if (user?.emailAddresses?.[0]?.emailAddress) {
+          const reviewPromises = orderData.items.map(async (item: OrderItem) => {
+            try {
+              const reviewResponse = await fetch(`http://localhost:5000/api/reviews/user/${user.emailAddresses[0].emailAddress}/product/${item.id}`);
+              if (reviewResponse.ok) {
+                const reviewData = await reviewResponse.json();
+                return { productId: item.id, review: reviewData };
+              }
+            } catch (error) {
+              console.error('Error fetching review for product', item.id, error);
+            }
+            return { productId: item.id, review: null };
+          });
+
+          const reviewResults = await Promise.all(reviewPromises);
+          const existingReviewsMap: { [key: number]: ExistingReview } = {};
+          
+          reviewResults.forEach(({ productId, review }) => {
+            if (review) {
+              existingReviewsMap[productId] = review;
+            }
+          });
+          
+          setExistingReviews(existingReviewsMap);
+        }
       } else {
         console.error('Order not found');
       }
@@ -68,20 +106,21 @@ const OrderDetailsPage: React.FC = () => {
       setLoading(false);
     }
   };
-
   const handleReviewChange = (productId: number, field: keyof Review, value: number | string) => {
     setReviews(prev => ({
       ...prev,
       [productId]: {
         ...prev[productId],
         productId,
-        [field]: value
+        [field]: value,
+        isEdit: !!existingReviews[productId]
       }
     }));
   };
-
   const submitReview = async (productId: number) => {
     const review = reviews[productId];
+    const existingReview = existingReviews[productId];
+    
     if (!review || !review.rating || !review.comment) {
       alert('Please provide both rating and comment');
       return;
@@ -89,19 +128,66 @@ const OrderDetailsPage: React.FC = () => {
 
     setSubmittingReview(productId);
     try {
-      const response = await fetch('http://localhost:5000/api/reviews', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...review,
-          orderId: order?.orderId
-        }),
-      });
+      let response;
+      
+      if (existingReview) {
+        // Update existing review
+        response = await fetch(`http://localhost:5000/api/reviews/${existingReview.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            rating: review.rating,
+            comment: review.comment,
+            customerEmail: user?.emailAddresses[0]?.emailAddress
+          }),
+        });
+      } else {
+        // Create new review
+        response = await fetch('http://localhost:5000/api/reviews', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            productId: review.productId,
+            rating: review.rating,
+            comment: review.comment,
+            orderId: order?.orderId,
+            customerEmail: user?.emailAddresses[0]?.emailAddress
+          }),
+        });
+      }
 
       if (response.ok) {
-        alert('Review submitted successfully!');
+        const result = await response.json();
+        alert(existingReview ? 'Review updated successfully!' : 'Review submitted successfully!');
+        
+        // Update existing reviews state
+        if (existingReview) {
+          setExistingReviews(prev => ({
+            ...prev,
+            [productId]: {
+              ...existingReview,
+              rating: review.rating,
+              comment: review.comment
+            }
+          }));
+        } else {
+          // For new review, refetch the review data
+          const newReviewResponse = await fetch(`http://localhost:5000/api/reviews/user/${user?.emailAddresses[0]?.emailAddress}/product/${productId}`);
+          if (newReviewResponse.ok) {
+            const newReviewData = await newReviewResponse.json();
+            if (newReviewData) {
+              setExistingReviews(prev => ({
+                ...prev,
+                [productId]: newReviewData
+              }));
+            }
+          }
+        }
+        
         // Clear the review form
         setReviews(prev => {
           const updated = { ...prev };
@@ -109,14 +195,39 @@ const OrderDetailsPage: React.FC = () => {
           return updated;
         });
       } else {
-        throw new Error('Failed to submit review');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to submit review');
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      alert('Failed to submit review. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Please try again.';
+      alert(`Failed to ${existingReview ? 'update' : 'submit'} review: ${errorMessage}`);
     } finally {
       setSubmittingReview(null);
     }
+  };
+
+  const startEditReview = (productId: number) => {
+    const existingReview = existingReviews[productId];
+    if (existingReview) {
+      setReviews(prev => ({
+        ...prev,
+        [productId]: {
+          productId,
+          rating: existingReview.rating,
+          comment: existingReview.comment,
+          isEdit: true
+        }
+      }));
+    }
+  };
+
+  const cancelEdit = (productId: number) => {
+    setReviews(prev => {
+      const updated = { ...prev };
+      delete updated[productId];
+      return updated;
+    });
   };
 
   const renderStarRating = (productId: number) => {
@@ -243,30 +354,75 @@ const OrderDetailsPage: React.FC = () => {
                   </div>                  {/* Review Section */}
                   {(order.status === 'delivered' || order.status === 'confirmed') && (
                     <div className="border-t pt-4">
-                      <h5 className="font-medium mb-2">Rate this product:</h5>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
-                          {renderStarRating(item.id)}
+                      {existingReviews[item.id] && !reviews[item.id] ? (
+                        // Show existing review
+                        <div className="bg-green-50 p-4 rounded-lg">
+                          <div className="flex justify-between items-start mb-2">
+                            <h5 className="font-medium text-green-800">Your Review:</h5>
+                            <button
+                              onClick={() => startEditReview(item.id)}
+                              className="text-blue-600 hover:text-blue-800 text-sm underline"
+                            >
+                              Edit Review
+                            </button>
+                          </div>
+                          <div className="flex items-center mb-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <FaStar
+                                key={star}
+                                className={`text-lg ${
+                                  star <= existingReviews[item.id].rating
+                                    ? 'text-yellow-500'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                            <span className="ml-2 text-sm text-gray-600">
+                              {new Date(existingReviews[item.id].createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-gray-700">{existingReviews[item.id].comment}</p>
                         </div>
+                      ) : (
+                        // Show review form (new or edit)
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
-                          <textarea
-                            value={reviews[item.id]?.comment || ''}
-                            onChange={(e) => handleReviewChange(item.id, 'comment', e.target.value)}
-                            rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Share your experience with this product..."
-                          />
+                          <div className="flex justify-between items-center mb-2">
+                            <h5 className="font-medium">
+                              {existingReviews[item.id] ? 'Edit your review:' : 'Rate this product:'}
+                            </h5>
+                            {reviews[item.id] && existingReviews[item.id] && (
+                              <button
+                                onClick={() => cancelEdit(item.id)}
+                                className="text-gray-600 hover:text-gray-800 text-sm underline"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                              {renderStarRating(item.id)}
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
+                              <textarea
+                                value={reviews[item.id]?.comment || ''}
+                                onChange={(e) => handleReviewChange(item.id, 'comment', e.target.value)}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Share your experience with this product..."
+                              />                            </div>
+                            <button
+                              onClick={() => submitReview(item.id)}
+                              disabled={submittingReview === item.id}
+                              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {submittingReview === item.id ? 'Submitting...' : 'Submit Review'}
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          onClick={() => submitReview(item.id)}
-                          disabled={submittingReview === item.id}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {submittingReview === item.id ? 'Submitting...' : 'Submit Review'}
-                        </button>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>
