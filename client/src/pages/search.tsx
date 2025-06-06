@@ -9,7 +9,7 @@ import { FaFilter, FaSort } from 'react-icons/fa';
 
 const SearchPage: React.FC = () => {
   const router = useRouter();
-  const { q } = router.query;
+  const { query: searchQuery, category: categoryParam, brand: brandParam } = router.query;
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,33 +24,41 @@ const SearchPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    if (q && typeof q === 'string') {
+    if (searchQuery) {
       const fetchSearchResults = async () => {
         try {
           setLoading(true);
-          const results = await searchProducts(q);
+          const results = await searchProducts(searchQuery as string);
           setProducts(results);
           setFilteredProducts(results);
-          
-          // Extract unique categories and brands
-          const uniqueCategories = [...new Set(results.map(p => p.category))];
-          const uniqueBrands = [...new Set(results.map(p => p.brand))];
+            // Extract unique categories and brands
+          const uniqueCategories = Array.from(new Set(results.map(p => p.category)));
+          const uniqueBrands = Array.from(new Set(results.map(p => p.brand)));
           setCategories(uniqueCategories);
           setBrands(uniqueBrands);
           
           // Find max price for range
           const maxPrice = Math.max(...results.map(p => p.price), 1000);
           setPriceRange({min: 0, max: maxPrice});
+          
+          // Apply category or brand filter if provided in URL
+          if (categoryParam) {
+            setSelectedCategory(categoryParam as string);
+          }
+          
+          if (brandParam) {
+            setSelectedBrand(brandParam as string);
+          }
         } catch (error) {
-          console.error('Error fetching search results:', error);
+          console.error('Error searching products:', error);
         } finally {
           setLoading(false);
         }
       };
-
+      
       fetchSearchResults();
     }
-  }, [q]);
+  }, [searchQuery, categoryParam, brandParam]);
 
   // Apply filters and sorting
   useEffect(() => {
@@ -109,14 +117,14 @@ const SearchPage: React.FC = () => {
   };
 
   return (
-    <Layout searchQuery={q as string}>
+    <Layout searchQuery={searchQuery as string}>
       <div className="container mx-auto px-4 py-8">
         {/* Remove the SearchBar component from here */}
         
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Search Results</h1>
-            <p className="text-gray-600">Showing results for: {q}</p>
+            <p className="text-gray-600">Showing results for: {searchQuery}</p>
           </div>
           <div className="flex space-x-4">
             <button 

@@ -5,12 +5,15 @@ import Layout from '../../components/Layout';
 import axios from 'axios';
 import { Product } from '../../services/api';
 import Link from 'next/link';
+import { useCart } from '../../contexts/CartContext';
 
 const ProductDetailsPage: React.FC = () => {
   const router = useRouter();
   const { id } = router.query;
+  const { addToCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState(1);
   const [isDiscountValid, setIsDiscountValid] = useState(false);
   const [remainingTime, setRemainingTime] = useState<{
     years: number;
@@ -213,6 +216,16 @@ const ProductDetailsPage: React.FC = () => {
               <span className="text-gray-500">{Object.keys(reviewsObj).length} reviews</span>
             </div>
 
+            {/* Category and Brand - New Section */}
+            <div className="mb-4 flex flex-wrap gap-2">
+              <Link href={`/search?category=${encodeURIComponent(product.category)}`} className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm">
+                Category: {product.category}
+              </Link>
+              <Link href={`/search?brand=${encodeURIComponent(product.brand)}`} className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm">
+                Brand: {product.brand}
+              </Link>
+            </div>
+
             <div className="mb-6">
               {product.discount > 0 && isDiscountValid ? (
                 <div>
@@ -251,8 +264,39 @@ const ProductDetailsPage: React.FC = () => {
               <p>Outside City: ${product.deliverycharge_outside}</p>
             </div>
 
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+              <div className="flex items-center">
+                <button 
+                  onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                  className="bg-gray-200 px-3 py-1 rounded-l-lg"
+                >
+                  -
+                </button>
+                <input 
+                  type="number" 
+                  min="1" 
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-16 text-center border-t border-b border-gray-300 py-1"
+                />
+                <button 
+                  onClick={() => setQuantity(prev => prev + 1)}
+                  className="bg-gray-200 px-3 py-1 rounded-r-lg"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
             <div className="flex space-x-4">
-              <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+              <button 
+                onClick={() => {
+                  addToCart(product, quantity);
+                  alert(`${quantity} ${product.title} added to cart`);
+                }}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+              >
                 Add to Cart
               </button>
               <button className="border border-blue-600 text-blue-600 px-6 py-2 rounded-lg hover:bg-blue-50">

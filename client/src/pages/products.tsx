@@ -24,10 +24,9 @@ const AllProductsPage: React.FC = () => {
         const allProducts = await getProducts();
         setProducts(allProducts);
         setFilteredProducts(allProducts);
-        
-        // Extract unique categories and brands
-        const uniqueCategories = [...new Set(allProducts.map(p => p.category))];
-        const uniqueBrands = [...new Set(allProducts.map(p => p.brand))];
+          // Extract unique categories and brands
+        const uniqueCategories = Array.from(new Set(allProducts.map(p => p.category)));
+        const uniqueBrands = Array.from(new Set(allProducts.map(p => p.brand)));
         setCategories(uniqueCategories);
         setBrands(uniqueBrands);
         

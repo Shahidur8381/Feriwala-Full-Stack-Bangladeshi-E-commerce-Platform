@@ -33,10 +33,9 @@ const ShopPage: React.FC = () => {
           const shopProducts = allProducts.filter(product => product.seller_id === Number(id));
           setProducts(shopProducts);
           setFilteredProducts(shopProducts);
-          
-          // Extract unique categories and brands
-          const uniqueCategories = [...new Set(shopProducts.map(p => p.category))];
-          const uniqueBrands = [...new Set(shopProducts.map(p => p.brand))];
+            // Extract unique categories and brands
+          const uniqueCategories = Array.from(new Set(shopProducts.map(p => p.category)));
+          const uniqueBrands = Array.from(new Set(shopProducts.map(p => p.brand)));
           setCategories(uniqueCategories);
           setBrands(uniqueBrands);
           

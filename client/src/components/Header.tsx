@@ -2,12 +2,17 @@ import React from 'react';
 import Link from 'next/link';
 import { FaShoppingCart, FaUser } from 'react-icons/fa';
 import SearchBar from './SearchBar';
+import { useUser, SignInButton, UserButton } from '@clerk/nextjs';
+import { useCart } from '../contexts/CartContext';
 
 interface HeaderProps {
   searchQuery?: string;
 }
 
 const Header: React.FC<HeaderProps> = ({ searchQuery = '' }) => {
+  const { isSignedIn, user } = useUser();
+  const { cartCount } = useCart();
+
   return (
     <header className="bg-white shadow-md py-4 px-6 sticky top-0 z-10">
       <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
@@ -25,13 +30,23 @@ const Header: React.FC<HeaderProps> = ({ searchQuery = '' }) => {
           <Link href="/cart" className="relative">
             <FaShoppingCart className="text-xl" />
             <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-              0
+              {cartCount}
             </span>
-          </Link>
-          
-          <Link href="/profile">
-            <FaUser className="text-xl" />
-          </Link>
+          </Link>          {isSignedIn ? (
+            <div className="flex items-center space-x-4">
+              <Link href="/profile" className="text-gray-600 hover:text-blue-600" title="Profile">
+                <FaUser className="text-xl" />
+              </Link>
+              <UserButton afterSignOutUrl="/" />
+            </div>
+          ) : (
+            <SignInButton mode="modal">
+              <button className="flex items-center space-x-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                <FaUser className="text-sm" />
+                <span>Sign In</span>
+              </button>
+            </SignInButton>
+          )}
         </div>
       </div>
     </header>
