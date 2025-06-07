@@ -51,13 +51,16 @@ jspm_packages/
 dist/
 build/
 
-# Database files (if you want to ignore them)
-# *.db
-# *.sqlite
-# *.sqlite3
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+ecommerce.db
 
-# Uploaded files (uncomment if you want to ignore uploads)
-# uploads/
+# Uploaded files (contains sensitive uploaded images)
+uploads/
+uploads/*
+!uploads/.gitkeep
 
 # Editor directories and files
 .vscode/
@@ -81,3 +84,33 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Additional security and sensitive files
+.env.backup
+*.pem
+*.key
+*.crt
+*.cert
+
+# Session files
+sessions/
+session.json
+
+# Cache files
+.cache/
+*.cache
+
+# TypeScript cache
+*.tsbuildinfo
+
+# API documentation build
+docs/build/
+
+# Memory dumps
+*.heapsnapshot
+
+# ESLint cache
+.eslintcache
+
+# Prettier cache
+.prettier-cache

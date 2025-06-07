@@ -1,15 +1,17 @@
 import express from 'express';
 
 const createReviewRoutes = (db) => {
-  const router = express.Router();  // Submit a review
+  const router = express.Router();
+
+  // Submit a review
   router.post('/', (req, res) => {
     const { productId, orderId, rating, comment, customerEmail } = req.body;
 
     console.log('Review submission data:', { productId, orderId, rating, comment, customerEmail });
 
-    if (!productId || !orderId || !rating || !comment || !customerEmail) {
+    if (!productId || !orderId || !rating || !customerEmail) {
       console.log('Missing required fields');
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ error: 'Missing required fields (productId, orderId, rating, customerEmail)' });
     }
 
     if (rating < 1 || rating > 5) {
@@ -82,8 +84,7 @@ const createReviewRoutes = (db) => {
 
             res.status(201).json({ 
               id: this.lastID, 
-              message: 'Review submitted successfully' 
-            });
+              message: 'Review submitted successfully'            });
           });
         });
       });
@@ -95,8 +96,8 @@ const createReviewRoutes = (db) => {
     const { reviewId } = req.params;
     const { rating, comment, customerEmail } = req.body;
 
-    if (!rating || !comment || !customerEmail) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!rating || !customerEmail) {
+      return res.status(400).json({ error: 'Missing required fields (rating, customerEmail)' });
     }
 
     if (rating < 1 || rating > 5) {
@@ -242,7 +243,6 @@ const createReviewRoutes = (db) => {
       res.json(summary);
     });
   });
-
   return router;
 };
 

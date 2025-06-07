@@ -45,6 +45,10 @@ coverage/
 # Vite
 .vite/
 
+# Vite specific
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
 # Parcel-bundler cache
 .cache/
 .parcel-cache/
@@ -76,3 +80,40 @@ pids/
 *.pid
 *.seed
 *.pid.lock
+
+# Storybook build outputs
+storybook-static/
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# IDE specific
+.vscode/settings.json
+.vscode/launch.json
+
+# Bundle analyzer
+stats.html
+bundle-analyzer/
+
+# Temporary folders
+.tmp/
+.temp/
+
+# PWA files
+**/public/sw.js
+**/public/workbox-*.js
+**/public/worker-*.js
+
+# TypeScript incremental build
+*.tsbuildinfo.tmp
+
+# React DevTools Profiler
+.react-devtools-profiler/
+
+# Chromatic
+chromatic-build/
+build-storybook.log

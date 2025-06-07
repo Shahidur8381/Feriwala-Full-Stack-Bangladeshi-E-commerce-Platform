@@ -7,6 +7,7 @@ import { FaStar, FaStarHalfAlt, FaRegStar } from 'react-icons/fa';
 
 interface OrderItem {
   id: number;
+  productId: number;  // This is the actual product ID we need for reviews
   title: string;
   price: number;
   quantity: number;
@@ -68,22 +69,21 @@ const OrderDetailsPage: React.FC = () => {
     try {
       const response = await fetch(`http://localhost:5000/api/orders/${orderIdParam}`);
       if (response.ok) {
-        const orderData = await response.json();
-        setOrder(orderData);
+        const orderData = await response.json();        setOrder(orderData);
 
         // Fetch existing reviews for products in this order
         if (user?.emailAddresses?.[0]?.emailAddress) {
           const reviewPromises = orderData.items.map(async (item: OrderItem) => {
             try {
-              const reviewResponse = await fetch(`http://localhost:5000/api/reviews/user/${user.emailAddresses[0].emailAddress}/product/${item.id}`);
+              const reviewResponse = await fetch(`http://localhost:5000/api/reviews/user/${user.emailAddresses[0].emailAddress}/product/${item.productId}`);
               if (reviewResponse.ok) {
                 const reviewData = await reviewResponse.json();
-                return { productId: item.id, review: reviewData };
+                return { productId: item.productId, review: reviewData };
               }
             } catch (error) {
-              console.error('Error fetching review for product', item.id, error);
+              console.error('Error fetching review for product', item.productId, error);
             }
-            return { productId: item.id, review: null };
+            return { productId: item.productId, review: null };
           });
 
           const reviewResults = await Promise.all(reviewPromises);
@@ -136,10 +136,9 @@ const OrderDetailsPage: React.FC = () => {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+          },          body: JSON.stringify({
             rating: review.rating,
-            comment: review.comment,
+            comment: review.comment || '', // Allow empty comment
             customerEmail: user?.emailAddresses[0]?.emailAddress
           }),
         });
@@ -149,11 +148,10 @@ const OrderDetailsPage: React.FC = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+          },          body: JSON.stringify({
             productId: review.productId,
             rating: review.rating,
-            comment: review.comment,
+            comment: review.comment || '', // Allow empty comment
             orderId: order?.orderId,
             customerEmail: user?.emailAddresses[0]?.emailAddress
           }),
@@ -354,13 +352,13 @@ const OrderDetailsPage: React.FC = () => {
                   </div>                  {/* Review Section */}
                   {(order.status === 'delivered' || order.status === 'confirmed') && (
                     <div className="border-t pt-4">
-                      {existingReviews[item.id] && !reviews[item.id] ? (
+                      {existingReviews[item.productId] && !reviews[item.productId] ? (
                         // Show existing review
                         <div className="bg-green-50 p-4 rounded-lg">
                           <div className="flex justify-between items-start mb-2">
                             <h5 className="font-medium text-green-800">Your Review:</h5>
                             <button
-                              onClick={() => startEditReview(item.id)}
+                              onClick={() => startEditReview(item.productId)}
                               className="text-blue-600 hover:text-blue-800 text-sm underline"
                             >
                               Edit Review
@@ -371,54 +369,54 @@ const OrderDetailsPage: React.FC = () => {
                               <FaStar
                                 key={star}
                                 className={`text-lg ${
-                                  star <= existingReviews[item.id].rating
+                                  star <= existingReviews[item.productId].rating
                                     ? 'text-yellow-500'
                                     : 'text-gray-300'
                                 }`}
                               />
                             ))}
                             <span className="ml-2 text-sm text-gray-600">
-                              {new Date(existingReviews[item.id].createdAt).toLocaleDateString()}
+                              {new Date(existingReviews[item.productId].createdAt).toLocaleDateString()}
                             </span>
                           </div>
-                          <p className="text-gray-700">{existingReviews[item.id].comment}</p>
+                          <p className="text-gray-700">{existingReviews[item.productId].comment}</p>
                         </div>
                       ) : (
                         // Show review form (new or edit)
                         <div>
                           <div className="flex justify-between items-center mb-2">
                             <h5 className="font-medium">
-                              {existingReviews[item.id] ? 'Edit your review:' : 'Rate this product:'}
+                              {existingReviews[item.productId] ? 'Edit your review:' : 'Rate this product:'}
                             </h5>
-                            {reviews[item.id] && existingReviews[item.id] && (
+                            {reviews[item.productId] && existingReviews[item.productId] && (
                               <button
-                                onClick={() => cancelEdit(item.id)}
+                                onClick={() => cancelEdit(item.productId)}
                                 className="text-gray-600 hover:text-gray-800 text-sm underline"
                               >
                                 Cancel
                               </button>
                             )}
                           </div>
-                          <div className="space-y-3">
-                            <div>
+                          <div className="space-y-3">                            <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
-                              {renderStarRating(item.id)}
+                              {renderStarRating(item.productId)}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
                               <textarea
-                                value={reviews[item.id]?.comment || ''}
-                                onChange={(e) => handleReviewChange(item.id, 'comment', e.target.value)}
+                                value={reviews[item.productId]?.comment || ''}
+                                onChange={(e) => handleReviewChange(item.productId, 'comment', e.target.value)}
                                 rows={3}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Share your experience with this product..."
-                              />                            </div>
+                                placeholder="Share your experience with this product... (optional)"
+                              />
+                            </div>
                             <button
-                              onClick={() => submitReview(item.id)}
-                              disabled={submittingReview === item.id}
+                              onClick={() => submitReview(item.productId)}
+                              disabled={submittingReview === item.productId || !reviews[item.productId]?.rating}
                               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              {submittingReview === item.id ? 'Submitting...' : 'Submit Review'}
+                              {submittingReview === item.productId ? 'Submitting...' : (existingReviews[item.productId] ? 'Update Review' : 'Submit Review')}
                             </button>
                           </div>
                         </div>

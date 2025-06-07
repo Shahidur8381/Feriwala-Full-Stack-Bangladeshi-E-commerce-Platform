@@ -10,6 +10,8 @@ interface OrderData {
   customerPhone: string;
   customerAddress: string;
   customerEmail: string;
+  deliveryLocation: 'inside_dhaka' | 'outside_dhaka';
+  deliveryCharge: number;
   items: any[];
   total: number;
 }
@@ -18,13 +20,22 @@ const CheckoutPage: React.FC = () => {
   const { cartItems, cartTotal, clearCart } = useCart();
   const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [orderData, setOrderData] = useState({
+  const [isLoading, setIsLoading] = useState(false);  const [orderData, setOrderData] = useState({
     customerName: '',
     customerPhone: '',
     customerAddress: '',
-    customerEmail: ''
+    customerEmail: '',
+    deliveryLocation: 'inside_dhaka' as 'inside_dhaka' | 'outside_dhaka'
   });
+
+  // Delivery charges
+  const DELIVERY_CHARGES = {
+    inside_dhaka: 60,
+    outside_dhaka: 120
+  };
+
+  const deliveryCharge = DELIVERY_CHARGES[orderData.deliveryLocation];
+  const totalWithDelivery = cartTotal + deliveryCharge;
 
   // Redirect if not signed in
   React.useEffect(() => {
@@ -35,12 +46,12 @@ const CheckoutPage: React.FC = () => {
 
   // Pre-fill user data when user is loaded
   React.useEffect(() => {
-    if (user) {
-      setOrderData({
+    if (user) {      setOrderData({
         customerName: user.fullName || '',
         customerPhone: user.phoneNumbers?.[0]?.phoneNumber || '',
         customerAddress: '',
-        customerEmail: user.primaryEmailAddress?.emailAddress || ''
+        customerEmail: user.primaryEmailAddress?.emailAddress || '',
+        deliveryLocation: 'inside_dhaka'
       });
     }
   }, [user]);
@@ -82,8 +93,7 @@ const CheckoutPage: React.FC = () => {
       </Layout>
     );
   }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setOrderData(prev => ({
       ...prev,
@@ -100,9 +110,9 @@ const CheckoutPage: React.FC = () => {
 
     setIsLoading(true);
     
-    try {
-      const order: OrderData = {
+    try {      const order: OrderData = {
         ...orderData,
+        deliveryCharge,
         items: cartItems.map(item => ({
           id: item.id,
           title: item.title,
@@ -112,7 +122,7 @@ const CheckoutPage: React.FC = () => {
           quantity: item.quantity,
           image: item.image
         })),
-        total: cartTotal
+        total: totalWithDelivery
       };
 
       const response = await fetch('http://localhost:5000/api/orders', {
@@ -190,8 +200,7 @@ const CheckoutPage: React.FC = () => {
                   required
                 />
               </div>
-              
-              <div>
+                <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Delivery Address *
                 </label>
@@ -204,6 +213,25 @@ const CheckoutPage: React.FC = () => {
                   placeholder="Enter your complete delivery address"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Delivery Location *
+                </label>
+                <select
+                  name="deliveryLocation"
+                  value={orderData.deliveryLocation}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="inside_dhaka">Inside Dhaka (৳60)</option>
+                  <option value="outside_dhaka">Outside Dhaka (৳120)</option>
+                </select>
+                <p className="text-sm text-gray-500 mt-1">
+                  Delivery charge: ৳{deliveryCharge}
+                </p>
               </div>
             </div>
           </div>
@@ -244,11 +272,18 @@ const CheckoutPage: React.FC = () => {
                 );
               })}
             </div>
-            
-            <div className="border-t pt-4 space-y-2">
-              <div className="flex justify-between text-lg font-semibold">
+              <div className="border-t pt-4 space-y-2">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>${cartTotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Delivery Charge ({orderData.deliveryLocation === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'})</span>
+                <span>৳{deliveryCharge}</span>
+              </div>
+              <div className="flex justify-between text-lg font-semibold border-t pt-2">
                 <span>Total</span>
-                <span className="text-blue-600">${cartTotal.toFixed(2)}</span>
+                <span className="text-blue-600">${totalWithDelivery.toFixed(2)}</span>
               </div>
             </div>
             

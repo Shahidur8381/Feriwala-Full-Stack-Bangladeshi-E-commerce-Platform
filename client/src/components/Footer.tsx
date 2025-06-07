@@ -11,13 +11,13 @@ const Footer: React.FC = () => {
             <h3 className="text-xl font-bold mb-4">FeriWala</h3>
             <p className="mb-4">Your one-stop shop for all your needs.</p>
             <div className="flex space-x-4">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+              <a href="https://facebook.com/SHAHIDUR8381" target="_blank" rel="noopener noreferrer">
                 <FaFacebook className="text-xl hover:text-blue-400" />
               </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+              <a href="https://x.com/SHAHIDUR8381" target="_blank" rel="noopener noreferrer">
                 <FaTwitter className="text-xl hover:text-blue-400" />
               </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+              <a href="https://instagram.com/SHAWON8381" target="_blank" rel="noopener noreferrer">
                 <FaInstagram className="text-xl hover:text-blue-400" />
               </a>
             </div>
@@ -25,19 +25,19 @@ const Footer: React.FC = () => {
           
           <div>
             <h3 className="text-xl font-bold mb-4">Contact Us</h3>
-            <p>123 Market Street</p>
-            <p>Dhaka, Bangladesh</p>
+            <p>403E, BSMRH, KUET</p>
+            <p>Khulna, Bangladesh</p>
             <p>Email: info@feriwala.com</p>
-            <p>Phone: +880 1234 567890</p>
+            <p>Phone: +880 1735 838381</p>
           </div>
           
           <div>
             <h3 className="text-xl font-bold mb-4">Quick Links</h3>
             <ul className="space-y-2">
-              <li><a href="/about" className="hover:text-blue-400">About Us</a></li>
+              {/* <li><a href="/about" className="hover:text-blue-400">About Us</a></li> */}
               <li><a href="/products" className="hover:text-blue-400">All Products</a></li>
               <li><a href="/sellers" className="hover:text-blue-400">All Shops</a></li>
-              <li><a href="/contact" className="hover:text-blue-400">Contact</a></li>
+              {/* <li><a href="/contact" className="hover:text-blue-400">Contact</a></li> */}
             </ul>
           </div>
         </div>
@@ -47,7 +47,7 @@ const Footer: React.FC = () => {
           <div className="mb-4">
             <TimeDisplay />
           </div>
-          <p>Author: FeriWala</p>
+          <p>Author: Shawon</p>
           <p>&copy; {new Date().getFullYear()} FeriWala. All rights reserved.</p>
         </div>
       </div>

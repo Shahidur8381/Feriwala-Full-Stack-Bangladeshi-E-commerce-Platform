@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useCart } from '../../contexts/CartContext';
 import { useUser } from '@clerk/nextjs';
 import { FaStar } from 'react-icons/fa';
+import { formatSold } from '../../utils/formatSold';
 
 interface Review {
   id: number;
@@ -79,6 +80,19 @@ const ProductDetailsPage: React.FC = () => {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [isEditingReview, setIsEditingReview] = useState(false);
+
+  // Function to refresh product data
+  const refreshProductData = async () => {
+    if (id) {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/products/${id}`);
+        setProduct(response.data);
+      } catch (error) {
+        console.error('Error refreshing product data:', error);
+      }
+    }
+  };
+
   useEffect(() => {
     if (id) {
       const fetchProduct = async () => {
@@ -299,39 +313,49 @@ const ProductDetailsPage: React.FC = () => {
             comment: reviewForm.comment,
             customerEmail: user?.emailAddresses[0]?.emailAddress
           }),
-        });
-      } else {
+        });      } else {
         // Submit new review - need to find an order ID for this product
-        const ordersResponse = await fetch(`http://localhost:5000/api/orders/user/${user?.emailAddresses[0]?.emailAddress}`);
-        const orders = await ordersResponse.json();
-        
-        // Find an order that contains this product
-        let orderId = null;
-        for (const order of orders) {
-          if (order.items?.some((item: any) => item.id === parseInt(id as string))) {
-            orderId = order.orderId;
-            break;
+        try {
+          const ordersResponse = await fetch(`http://localhost:5000/api/orders/user/${user?.emailAddresses[0]?.emailAddress}`);
+          
+          if (!ordersResponse.ok) {
+            throw new Error(`Failed to fetch orders: ${ordersResponse.status} ${ordersResponse.statusText}`);
           }
-        }
+          
+          const orders = await ordersResponse.json();
+          
+          // Find an order that contains this product
+          let orderId = null;
+          for (const order of orders) {
+            if (order.items?.some((item: any) => item.id === parseInt(id as string))) {
+              orderId = order.orderId;
+              break;
+            }
+          }
 
-        if (!orderId) {
-          alert('You must purchase this product before reviewing it.');
+          if (!orderId) {
+            alert('You must purchase this product before reviewing it.');
+            return;
+          }
+
+          response = await fetch('http://localhost:5000/api/reviews', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              productId: parseInt(id as string),
+              rating: reviewForm.rating,
+              comment: reviewForm.comment,
+              orderId: orderId,
+              customerEmail: user?.emailAddresses[0]?.emailAddress
+            }),
+          });
+        } catch (ordersError) {
+          console.error('Error fetching orders:', ordersError);
+          alert('Failed to verify purchase history. Please try again.');
           return;
         }
-
-        response = await fetch('http://localhost:5000/api/reviews', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            productId: parseInt(id as string),
-            rating: reviewForm.rating,
-            comment: reviewForm.comment,
-            orderId: orderId,
-            customerEmail: user?.emailAddresses[0]?.emailAddress
-          }),
-        });
       }
 
       if (response?.ok) {
@@ -368,10 +392,25 @@ const ProductDetailsPage: React.FC = () => {
             rating: reviewForm.rating,
             comment: reviewForm.comment
           });
+        }      } else {
+        let errorMessage = 'Failed to submit review';
+        try {
+          const errorData = await response?.json();
+          errorMessage = errorData?.error || errorMessage;
+        } catch (parseError) {
+          // If response is not JSON (e.g., HTML error page), get text
+          try {
+            const errorText = await response?.text();
+            if (errorText?.includes('<!DOCTYPE')) {
+              errorMessage = 'Server error - please check if the server is running correctly';
+            } else {
+              errorMessage = errorText || errorMessage;
+            }
+          } catch (textError) {
+            console.error('Error parsing response:', parseError, textError);
+          }
         }
-      } else {
-        const errorData = await response?.json();
-        throw new Error(errorData?.error || 'Failed to submit review');
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Error submitting review:', error);
@@ -403,6 +442,33 @@ const ProductDetailsPage: React.FC = () => {
     setReviewForm({ rating: 0, comment: '' });
     setShowReviewForm(false);
     setIsEditingReview(false);
+  };  const handleBuyNow = () => {
+    if (!product) return;
+    
+    // Check if requested quantity is available
+    if (quantity > product.stock) {
+      alert(`Only ${product.stock} items available in stock.`);
+      return;
+    }
+    
+    if (product.stock === 0) {
+      alert('This product is out of stock.');
+      return;
+    }
+    
+    try {
+      // Add to cart first
+      addToCart(product, quantity);
+      
+      // Show success feedback
+      alert(`${quantity} ${product.title} added to cart. Redirecting to checkout...`);
+      
+      // Redirect to checkout
+      router.push('/checkout');
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('Failed to add item to cart. Please try again.');
+    }
   };
 
   const renderStarRating = () => {
@@ -498,9 +564,8 @@ const ProductDetailsPage: React.FC = () => {
               <div className="flex space-x-6 text-sm text-gray-600">
                 <div>
                   <span className="font-medium">Stock:</span> {product.stock} available
-                </div>
-                <div>
-                  <span className="font-medium">Sold:</span> {product.sold} units
+                </div>                <div>
+                  <span className="font-medium">Sold:</span> {formatSold(product.sold)}
                 </div>
               </div>
             </div>
@@ -509,43 +574,78 @@ const ProductDetailsPage: React.FC = () => {
               <h3 className="text-lg font-semibold mb-2">Delivery Information</h3>
               <p>Inside City: ${product.deliverycharge_inside}</p>
               <p>Outside City: ${product.deliverycharge_outside}</p>
-            </div>
-
-            <div className="mb-4">
+            </div>            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
               <div className="flex items-center">
                 <button 
                   onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                  className="bg-gray-200 px-3 py-1 rounded-l-lg"
+                  disabled={quantity <= 1}
+                  className="bg-gray-200 px-3 py-1 rounded-l-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   -
                 </button>
                 <input 
                   type="number" 
                   min="1" 
+                  max={product.stock}
                   value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={(e) => {
+                    const newQuantity = Math.max(1, Math.min(product.stock, parseInt(e.target.value) || 1));
+                    setQuantity(newQuantity);
+                  }}
                   className="w-16 text-center border-t border-b border-gray-300 py-1"
                 />
                 <button 
-                  onClick={() => setQuantity(prev => prev + 1)}
-                  className="bg-gray-200 px-3 py-1 rounded-r-lg"
+                  onClick={() => setQuantity(prev => Math.min(product.stock, prev + 1))}
+                  disabled={quantity >= product.stock}
+                  className="bg-gray-200 px-3 py-1 rounded-r-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   +
                 </button>
               </div>
+              {quantity > product.stock && (
+                <p className="text-red-500 text-sm mt-1">
+                  Only {product.stock} items available
+                </p>
+              )}
             </div>            <div className="flex space-x-4">
               <button 
                 onClick={() => {
-                  addToCart(product, quantity);
-                  alert(`${quantity} ${product.title} added to cart`);
+                  if (product.stock === 0) {
+                    alert('This product is out of stock.');
+                    return;
+                  }
+                  if (quantity > product.stock) {
+                    alert(`Only ${product.stock} items available in stock.`);
+                    return;
+                  }
+                  try {
+                    addToCart(product, quantity);
+                    alert(`${quantity} ${product.title} added to cart`);
+                  } catch (error) {
+                    console.error('Error adding to cart:', error);
+                    alert('Failed to add item to cart. Please try again.');
+                  }
                 }}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+                disabled={product.stock === 0}
+                className={`px-6 py-2 rounded-lg ${
+                  product.stock === 0 
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
-                Add to Cart
+                {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
               </button>
-              <button className="border border-blue-600 text-blue-600 px-6 py-2 rounded-lg hover:bg-blue-50">
-                Buy Now
+              <button 
+                onClick={handleBuyNow}
+                disabled={product.stock === 0}
+                className={`px-6 py-2 rounded-lg ${
+                  product.stock === 0 
+                    ? 'border border-gray-400 text-gray-400 cursor-not-allowed' 
+                    : 'border border-blue-600 text-blue-600 hover:bg-blue-50'
+                }`}
+              >
+                {product.stock === 0 ? 'Out of Stock' : 'Buy Now'}
               </button>
             </div>
           </div>

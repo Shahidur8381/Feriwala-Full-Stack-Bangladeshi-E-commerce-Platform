@@ -119,7 +119,8 @@ const Dashboard: React.FC = () => {
         title: tempTitle,
         price: tempPrice,
         stock: tempStock,
-        description: tempDescription
+        description: tempDescription,
+        sold: 0
       };
       
       const response = await axios.put(

@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '../services/api';
 import axios from 'axios';
+import { formatSold } from '../utils/formatSold';
 
 interface ProductCardProps {
   product: Product;
@@ -165,10 +166,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <span className="text-gray-400 text-xs ml-1">({totalReviews})</span>
             </div>
           </div>
-            <p className="text-sm text-gray-500 mt-2 truncate">{product.shopname}</p>
-          
-          <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-            <span>{product.sold} sold</span>
+            <p className="text-sm text-gray-500 mt-2 truncate">{product.shopname}</p>          <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+            <span>{formatSold(product.sold)}</span>
             <span>{product.stock} in stock</span>
           </div>
           

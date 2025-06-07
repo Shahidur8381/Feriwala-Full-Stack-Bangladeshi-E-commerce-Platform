@@ -84,3 +84,42 @@ Thumbs.db
 
 # Turbo
 .turbo
+
+# Sentry
+.sentryclirc
+
+# Storybook build outputs
+storybook-static/
+
+# Temporary folders
+.tmp/
+.temp/
+
+# PWA files
+**/public/sw.js
+**/public/workbox-*.js
+**/public/worker-*.js
+**/public/sw.js.map
+**/public/workbox-*.js.map
+**/public/worker-*.js.map
+
+# IDE
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Bundle analyzer
+.next/analyze/
+
+# Next.js sitemap
+sitemap.xml
+robots.txt

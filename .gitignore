@@ -1,0 +1,75 @@
+# Root-level gitignore for Feriwala E-commerce Store
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+
+# Logs
+logs/
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Package manager lock files (keep only one type)
+# If using npm, uncomment the yarn.lock line
+# yarn.lock
+
+# If using yarn, uncomment the package-lock.json line
+# package-lock.json
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Test files and scripts (adjust as needed)
+test-*.js
+*.test.js
+*.spec.js

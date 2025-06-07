@@ -9,7 +9,7 @@ import { FaFilter, FaSort } from 'react-icons/fa';
 
 const SearchPage: React.FC = () => {
   const router = useRouter();
-  const { query: searchQuery, category: categoryParam, brand: brandParam } = router.query;
+  const { q: searchQuery, category: categoryParam, brand: brandParam } = router.query;
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,18 +22,17 @@ const SearchPage: React.FC = () => {
   const [priceRange, setPriceRange] = useState<{min: number, max: number}>({min: 0, max: 1000});
   const [sortOption, setSortOption] = useState<string>('default');
   const [showFilters, setShowFilters] = useState(false);
-
   useEffect(() => {
     if (searchQuery) {
-      const fetchSearchResults = async () => {
-        try {
+      const fetchSearchResults = async () => {        try {
           setLoading(true);
           const results = await searchProducts(searchQuery as string);
           setProducts(results);
           setFilteredProducts(results);
-            // Extract unique categories and brands
-          const uniqueCategories = Array.from(new Set(results.map(p => p.category)));
-          const uniqueBrands = Array.from(new Set(results.map(p => p.brand)));
+          
+          // Extract unique categories and brands
+          const uniqueCategories = Array.from(new Set(results.map(p => p.category).filter(Boolean)));
+          const uniqueBrands = Array.from(new Set(results.map(p => p.brand).filter(Boolean)));
           setCategories(uniqueCategories);
           setBrands(uniqueBrands);
           
@@ -57,6 +56,11 @@ const SearchPage: React.FC = () => {
       };
       
       fetchSearchResults();
+    } else {
+      // If no search query, show loading state briefly then empty results
+      setLoading(false);
+      setProducts([]);
+      setFilteredProducts([]);
     }
   }, [searchQuery, categoryParam, brandParam]);
 
@@ -120,11 +124,16 @@ const SearchPage: React.FC = () => {
     <Layout searchQuery={searchQuery as string}>
       <div className="container mx-auto px-4 py-8">
         {/* Remove the SearchBar component from here */}
-        
-        <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Search Results</h1>
-            <p className="text-gray-600">Showing results for: {searchQuery}</p>
+            {searchQuery ? (
+              <p className="text-gray-600">
+                Showing {filteredProducts.length} results for: "{searchQuery}"
+              </p>
+            ) : (
+              <p className="text-gray-600">Enter a search term to find products</p>
+            )}
           </div>
           <div className="flex space-x-4">
             <button 
@@ -226,11 +235,20 @@ const SearchPage: React.FC = () => {
             {filteredProducts.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}
-          </div>
-        ) : (
+          </div>        ) : (
           <div className="text-center py-12">
-            <h2 className="text-2xl font-semibold mb-4">No results found</h2>
-            <p className="text-gray-600">Try different keywords or browse our products</p>
+            {searchQuery ? (
+              <>
+                <h2 className="text-2xl font-semibold mb-4">No results found</h2>
+                <p className="text-gray-600 mb-2">No products found for "{searchQuery}"</p>
+                <p className="text-gray-600">Try different keywords or browse our products</p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-semibold mb-4">Start searching</h2>
+                <p className="text-gray-600">Use the search bar above to find products</p>
+              </>
+            )}
             <button 
               onClick={() => router.push('/products')} 
               className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
