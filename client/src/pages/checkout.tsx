@@ -18,9 +18,12 @@ interface OrderData {
 
 const CheckoutPage: React.FC = () => {
   const { cartItems, cartTotal, clearCart } = useCart();
-  const { isLoaded, isSignedIn, user } = useUser();
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);  const [orderData, setOrderData] = useState({
+  const { isLoaded, isSignedIn, user } = useUser();  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [placedOrderId, setPlacedOrderId] = useState<string>('');
+
+  const [orderData, setOrderData] = useState({
     customerName: '',
     customerPhone: '',
     customerAddress: '',
@@ -55,13 +58,12 @@ const CheckoutPage: React.FC = () => {
       });
     }
   }, [user]);
-
-  // Redirect if cart is empty
+  // Redirect if cart is empty (but not if order was just placed)
   React.useEffect(() => {
-    if (isLoaded && cartItems.length === 0) {
+    if (isLoaded && cartItems.length === 0 && !orderPlaced) {
       router.push('/cart');
     }
-  }, [isLoaded, cartItems.length, router]);
+  }, [isLoaded, cartItems.length, orderPlaced, router]);
 
   if (!isLoaded || !isSignedIn) {
     return (
@@ -76,7 +78,7 @@ const CheckoutPage: React.FC = () => {
     );
   }
 
-  if (cartItems.length === 0) {
+  if (cartItems.length === 0 && !orderPlaced) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">
@@ -131,12 +133,12 @@ const CheckoutPage: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(order),
-      });
-
-      if (response.ok) {
+      });      if (response.ok) {
         const result = await response.json();
         clearCart();
-        router.push(`/orders/${result.orderId}`);
+        // Set order placed state instead of immediate redirect
+        setOrderPlaced(true);
+        setPlacedOrderId(result.orderId);
       } else {
         throw new Error('Failed to place order');
       }
@@ -147,10 +149,44 @@ const CheckoutPage: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
+        {orderPlaced ? (
+          /* Order Success UI */
+          <div className="max-w-md mx-auto text-center">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-8">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-green-800 mb-2">Order Placed Successfully!</h1>
+              <p className="text-green-600 mb-4">
+                Your order has been placed successfully. 
+                <br />
+                Order ID: <span className="font-mono font-semibold">#{placedOrderId.slice(-8)}</span>
+              </p>
+              <p className="text-gray-600 mb-6">
+                Click the button below to proceed with payment for your order.
+              </p>
+              <button
+                onClick={() => router.push(`/payment/${placedOrderId}`)}
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold mb-4 w-full"
+              >
+                Pay Now
+              </button>
+              <button
+                onClick={() => router.push('/profile')}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                View in My Orders
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Regular Checkout UI */
+          <>
         <h1 className="text-3xl font-bold mb-6">Checkout</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -226,8 +262,8 @@ const CheckoutPage: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  <option value="inside_dhaka">Inside Dhaka (৳60)</option>
-                  <option value="outside_dhaka">Outside Dhaka (৳120)</option>
+                  <option value="inside_dhaka">Inside Khulna (৳60)</option>
+                  <option value="outside_dhaka">Outside Khulna (৳120)</option>
                 </select>
                 <p className="text-sm text-gray-500 mt-1">
                   Delivery charge: ৳{deliveryCharge}
@@ -278,7 +314,7 @@ const CheckoutPage: React.FC = () => {
                 <span>${cartTotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Delivery Charge ({orderData.deliveryLocation === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'})</span>
+                <span>Delivery Charge ({orderData.deliveryLocation === 'inside_dhaka' ? 'Inside Khulna' : 'Outside Khulna'})</span>
                 <span>৳{deliveryCharge}</span>
               </div>
               <div className="flex justify-between text-lg font-semibold border-t pt-2">
@@ -292,10 +328,11 @@ const CheckoutPage: React.FC = () => {
               disabled={isLoading}
               className="w-full mt-6 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Placing Order...' : 'Place Order'}
-            </button>
+              {isLoading ? 'Placing Order...' : 'Place Order'}            </button>
           </div>
         </div>
+        </>
+        )}
       </div>
     </Layout>
   );

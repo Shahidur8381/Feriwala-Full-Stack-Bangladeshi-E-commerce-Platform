@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { FaTrash, FaMinus, FaPlus } from 'react-icons/fa';
 
 const CartPage: React.FC = () => {
-  const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal, validateCartStock } = useCart();
   const { isLoaded, isSignedIn } = useUser();
   const router = useRouter();
 
@@ -18,6 +18,27 @@ const CartPage: React.FC = () => {
       router.push('/sign-in');
     }
   }, [isLoaded, isSignedIn, router]);
+  // Validate cart stock when component mounts
+  React.useEffect(() => {
+    if (isLoaded && isSignedIn && cartItems.length > 0) {
+      validateCartStock();
+    }
+  }, [isLoaded, isSignedIn, validateCartStock]);
+
+  // Helper function to handle quantity updates with better UX
+  const handleQuantityUpdate = (itemId: number, newQuantity: number, itemStock: number) => {
+    if (newQuantity <= 0) {
+      updateQuantity(itemId, 1);
+      return;
+    }
+    
+    if (newQuantity > itemStock) {
+      alert(`Sorry, only ${itemStock} items are available in stock.`);
+      return;
+    }
+    
+    updateQuantity(itemId, newQuantity);
+  };
 
   if (!isLoaded || !isSignedIn) {
     return (
@@ -31,7 +52,6 @@ const CartPage: React.FC = () => {
       </Layout>
     );
   }
-
   if (cartItems.length === 0) {
     return (
       <Layout>
@@ -49,6 +69,10 @@ const CartPage: React.FC = () => {
       </Layout>
     );
   }
+
+  // Check for out-of-stock items
+  const outOfStockItems = cartItems.filter(item => item.stock === 0);
+  const hasStockIssues = cartItems.some(item => item.quantity > item.stock || item.stock === 0);
 
   return (
     <Layout>
@@ -76,8 +100,10 @@ const CartPage: React.FC = () => {
                       : item.price;
                     const itemTotal = itemPrice * item.quantity;
                     
-                    return (
-                      <tr key={item.id}>
+                    return (                      <tr key={item.id} className={`${
+                        item.stock === 0 ? 'bg-red-50' : 
+                        item.quantity >= item.stock ? 'bg-orange-50' : ''
+                      }`}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-16 w-16 relative flex-shrink-0">
@@ -96,6 +122,16 @@ const CartPage: React.FC = () => {
                               <Link href={`/product/${item.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600">
                                 {item.title}
                               </Link>
+                              {item.stock === 0 && (
+                                <div className="text-xs text-red-600 font-medium mt-1">
+                                  ❌ Out of stock
+                                </div>
+                              )}
+                              {item.stock > 0 && item.quantity >= item.stock && (
+                                <div className="text-xs text-orange-600 font-medium mt-1">
+                                  ⚠️ Maximum quantity reached
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -108,28 +144,68 @@ const CartPage: React.FC = () => {
                           ) : (
                             <span className="text-blue-600">${item.price}</span>
                           )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <button 
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="bg-gray-200 p-1 rounded"
-                            >
-                              <FaMinus className="text-xs" />
-                            </button>
-                            <input 
-                              type="number" 
-                              min="1" 
-                              value={item.quantity}
-                              onChange={(e) => updateQuantity(item.id, Math.max(1, parseInt(e.target.value) || 1))}
-                              className="w-12 text-center border border-gray-300 mx-2 py-1"
-                            />
-                            <button 
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="bg-gray-200 p-1 rounded"
-                            >
-                              <FaPlus className="text-xs" />
-                            </button>
+                        </td>                        <td className="px-6 py-4 whitespace-nowrap">
+                          {item.stock === 0 ? (
+                            <div className="text-center">
+                              <div className="text-red-600 font-medium text-sm">Out of Stock</div>
+                              <button
+                                onClick={() => removeFromCart(item.id)}
+                                className="text-red-600 text-xs hover:underline mt-1"
+                              >
+                                Remove from cart
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center">
+                              <button 
+                                onClick={() => handleQuantityUpdate(item.id, item.quantity - 1, item.stock)}
+                                className="bg-gray-200 p-1 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={item.quantity <= 1}
+                                title={item.quantity <= 1 ? "Minimum quantity is 1" : "Decrease quantity"}
+                              >
+                                <FaMinus className="text-xs" />
+                              </button>
+                              <input 
+                                type="number" 
+                                min="1" 
+                                max={item.stock}
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const newQuantity = parseInt(e.target.value) || 1;
+                                  handleQuantityUpdate(item.id, newQuantity, item.stock);
+                                }}
+                                className="w-16 text-center border border-gray-300 mx-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                title={`Maximum available: ${item.stock}`}
+                              />
+                              <button 
+                                onClick={() => handleQuantityUpdate(item.id, item.quantity + 1, item.stock)}
+                                className="bg-gray-200 p-1 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={item.quantity >= item.stock}
+                                title={item.quantity >= item.stock ? `Only ${item.stock} available in stock` : "Increase quantity"}
+                              >
+                                <FaPlus className="text-xs" />
+                              </button>
+                            </div>
+                          )}
+                          <div className="text-xs text-gray-500 mt-1">
+                            {item.stock === 0 && (
+                              <span className="text-red-600 font-medium">
+                                This item is currently unavailable
+                              </span>
+                            )}
+                            {item.stock > 0 && item.stock <= 5 && (
+                              <span className="text-orange-600 font-medium">
+                                ⚠️ Only {item.stock} left in stock
+                              </span>
+                            )}
+                            {item.stock > 5 && (
+                              <span>Stock: {item.stock} available</span>
+                            )}
+                            {item.stock > 0 && item.quantity >= item.stock && (
+                              <div className="text-red-600 font-medium">
+                                Max quantity reached
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-blue-600 font-medium">
@@ -177,11 +253,32 @@ const CartPage: React.FC = () => {
                 <div className="border-t pt-3 flex justify-between">
                   <span className="font-semibold">Total</span>
                   <span className="font-bold text-blue-600">${cartTotal.toFixed(2)}</span>
+                </div>              </div>
+              
+              {hasStockIssues && (
+                <div className="mb-4 p-3 bg-orange-100 border border-orange-300 rounded-lg">
+                  <p className="text-orange-800 text-sm font-medium">
+                    ⚠️ Some items in your cart have stock limitations
+                  </p>
+                  {outOfStockItems.length > 0 && (
+                    <p className="text-orange-700 text-xs mt-1">
+                      {outOfStockItems.length} item(s) are out of stock and need to be removed
+                    </p>
+                  )}
                 </div>
-              </div>
-                <Link href="/checkout">
-                <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
-                  Proceed to Checkout
+              )}
+              
+              <Link href="/checkout">
+                <button 
+                  className={`w-full py-2 px-4 rounded-lg ${
+                    hasStockIssues 
+                      ? 'bg-gray-400 text-gray-700 cursor-not-allowed' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                  disabled={hasStockIssues}
+                  title={hasStockIssues ? 'Please resolve stock issues before checkout' : 'Proceed to checkout'}
+                >
+                  {hasStockIssues ? 'Resolve Stock Issues' : 'Proceed to Checkout'}
                 </button>
               </Link>
               

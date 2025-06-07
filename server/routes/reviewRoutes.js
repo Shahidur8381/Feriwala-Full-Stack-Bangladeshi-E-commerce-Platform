@@ -31,11 +31,18 @@ const createReviewRoutes = (db) => {
       if (!order) {
         console.log('Order not found:', orderId);
         return res.status(404).json({ error: 'Order not found' });
-      }
-
-      if (order.customerEmail !== customerEmail) {
+      }      if (order.customerEmail !== customerEmail) {
         console.log('Email mismatch:', order.customerEmail, 'vs', customerEmail);
         return res.status(403).json({ error: 'Unauthorized to review this order' });
+      }
+
+      // Check if order is delivered (only delivered orders can be reviewed)
+      if (order.status !== 'delivered') {
+        console.log('Order not delivered yet:', orderId, 'status:', order.status);
+        return res.status(400).json({ 
+          error: 'Reviews can only be submitted for delivered orders',
+          currentStatus: order.status 
+        });
       }
 
       // Check if user has already reviewed this product (regardless of order)

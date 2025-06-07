@@ -1,8 +1,11 @@
 import express from 'express';
+import verifySellerJWT from '../middleware/verifySellerJWT.js';
 
 const createAdminRoutes = (db) => {
   const router = express.Router();
 
+  // Apply JWT middleware to all admin routes
+  router.use(verifySellerJWT);
   // Get all orders (admin only)
   router.get('/orders', (req, res) => {
     db.all(`
@@ -20,7 +23,6 @@ const createAdminRoutes = (db) => {
       res.json(orders);
     });
   });
-
   // Update order status (admin only)
   router.patch('/orders/:orderId/status', (req, res) => {
     const { orderId } = req.params;
@@ -28,6 +30,12 @@ const createAdminRoutes = (db) => {
 
     if (!status) {
       return res.status(400).json({ error: 'Status is required' });
+    }
+
+    // Validate status
+    const validStatuses = ['unpaid', 'pending', 'paid', 'ready_to_ship', 'shipped', 'out_for_delivery', 'delivered'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
     }
 
     db.run(`

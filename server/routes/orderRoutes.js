@@ -16,7 +16,7 @@ const createOrderRoutes = (db) => {
         deliveryLocation TEXT DEFAULT 'inside_dhaka',
         deliveryCharge REAL DEFAULT 60,
         total REAL NOT NULL,
-        status TEXT DEFAULT 'confirmed',
+        status TEXT DEFAULT 'unpaid' CHECK (status IN ('unpaid', 'pending', 'paid', 'ready_to_ship', 'shipped', 'out_for_delivery', 'delivered')),
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `, (err) => {
@@ -153,7 +153,7 @@ const createOrderRoutes = (db) => {
           });          // Insert order
           db.run(`
             INSERT INTO orders (orderId, customerName, customerPhone, customerAddress, customerEmail, deliveryLocation, deliveryCharge, total, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'unpaid')
           `, [orderId, customerName, customerPhone, customerAddress, customerEmail, finalDeliveryLocation, finalDeliveryCharge, total], function(err) {
             if (err) {
               console.error('Error inserting order:', err.message);
@@ -213,6 +213,72 @@ const createOrderRoutes = (db) => {
         console.error('Stock validation failed:', error.message);
         res.status(400).json({ error: error.message });
       });
+  });
+
+  // Process payment for an order
+  router.post('/:orderId/payment', (req, res) => {
+    const { orderId } = req.params;
+    const { paymentMethod, paymentAccount, transactionId } = req.body;
+
+    // Validate required fields
+    if (!paymentMethod || !paymentAccount || !transactionId) {
+      return res.status(400).json({ 
+        error: 'All payment fields are required',
+        required: ['paymentMethod', 'paymentAccount', 'transactionId']
+      });
+    }
+
+    // Validate payment method
+    const validPaymentMethods = ['bkash', 'nagad', 'rocket', 'upay', 'visa', 'mastercard'];
+    if (!validPaymentMethods.includes(paymentMethod.toLowerCase())) {
+      return res.status(400).json({ 
+        error: 'Invalid payment method',
+        validMethods: validPaymentMethods
+      });
+    }
+
+    // First check if order exists and is unpaid
+    db.get(`SELECT * FROM orders WHERE orderId = ?`, [orderId], (err, order) => {
+      if (err) {
+        console.error('Error checking order:', err.message);
+        return res.status(500).json({ error: 'Failed to check order' });
+      }
+
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      if (order.status !== 'unpaid') {
+        return res.status(400).json({ 
+          error: 'Order is not eligible for payment',
+          currentStatus: order.status
+        });
+      }
+
+      // Update order with payment information and set status to pending
+      db.run(`
+        UPDATE orders 
+        SET paymentMethod = ?, paymentAccount = ?, transactionId = ?, status = 'pending', paymentStatus = 'pending'
+        WHERE orderId = ?
+      `, [paymentMethod.toLowerCase(), paymentAccount, transactionId, orderId], function(err) {
+        if (err) {
+          console.error('Error processing payment:', err.message);
+          return res.status(500).json({ error: 'Failed to process payment' });
+        }
+
+        if (this.changes === 0) {
+          return res.status(404).json({ error: 'Order not found' });
+        }
+
+        res.json({ 
+          message: 'Payment information submitted successfully',
+          orderId: orderId,
+          status: 'pending',
+          paymentMethod: paymentMethod.toLowerCase(),
+          transactionId: transactionId
+        });
+      });
+    });
   });
 
   // Get order by ID
@@ -303,14 +369,36 @@ const createOrderRoutes = (db) => {
       res.json(orders);
     });
   });
+    // Get all valid order statuses
+  router.get('/statuses/all', (req, res) => {
+    const statuses = [
+      { value: 'unpaid', label: 'Unpaid', description: 'Order placed but payment not received' },
+      { value: 'pending', label: 'Payment Pending', description: 'Payment information submitted, awaiting verification' },
+      { value: 'paid', label: 'Paid', description: 'Payment received, order confirmed' },
+      { value: 'ready_to_ship', label: 'Ready to Ship', description: 'Order packed and ready for shipping' },
+      { value: 'shipped', label: 'Shipped', description: 'Order has been shipped' },
+      { value: 'out_for_delivery', label: 'Out for Delivery', description: 'Order is out for delivery' },
+      { value: 'delivered', label: 'Delivered', description: 'Order has been delivered' }
+    ];
+    
+    res.json(statuses);
+  });
 
   // Update order status
   router.patch('/:orderId/status', (req, res) => {
     const { orderId } = req.params;
-    const { status } = req.body;
-
+    const { status } = req.body;    // Validate status value
+    const validStatuses = ['unpaid', 'pending', 'paid', 'ready_to_ship', 'shipped', 'out_for_delivery', 'delivered'];
+    
     if (!status) {
       return res.status(400).json({ error: 'Status is required' });
+    }
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        error: 'Invalid status value', 
+        validStatuses: validStatuses 
+      });
     }
 
     db.run(`
@@ -325,7 +413,34 @@ const createOrderRoutes = (db) => {
         return res.status(404).json({ error: 'Order not found' });
       }
 
-      res.json({ message: 'Order status updated successfully' });
+      res.json({ 
+        message: 'Order status updated successfully',
+        orderId: orderId,
+        newStatus: status
+      });    });
+  });
+
+  // Get order items by order ID
+  router.get('/:orderId/items', (req, res) => {
+    const { orderId } = req.params;
+
+    db.all(`
+      SELECT 
+        id,
+        productId,
+        title,
+        price,
+        quantity,
+        image
+      FROM order_items 
+      WHERE orderId = ?
+    `, [orderId], (err, items) => {
+      if (err) {
+        console.error('Error fetching order items:', err.message);
+        return res.status(500).json({ error: 'Failed to fetch order items' });
+      }
+
+      res.json(items);
     });
   });
 

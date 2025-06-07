@@ -4,11 +4,12 @@ import Dashboard from "./pages/Dashboard";
 import AddProduct from "./pages/AddProduct";
 import EditProduct from "./pages/EditProduct";
 import ManageProduct from "./pages/ManageProduct";
+import Orders from "./pages/Orders";
 import SellerLoginPage from "./pages/SellerLoginPage";
 import SellerSignupPage from "./pages/SellerSignupPage";
 import SellerProfilePage from "./pages/SellerProfilePage";
 import { isLoggedIn, logout } from "./utils/auths";
-import { FaHome, FaPlus, FaTasks, FaUser, FaSignOutAlt } from "react-icons/fa";
+import { FaHome, FaPlus, FaTasks, FaUser, FaSignOutAlt, FaClipboardList } from "react-icons/fa";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (!isLoggedIn()) {
@@ -46,6 +47,10 @@ const App: React.FC = () => {
               <FaTasks className="nav-icon" />
               <span>Manage Products</span>
             </Link>
+            <Link to="/orders" className="nav-link">
+              <FaClipboardList className="nav-icon" />
+              <span>Orders</span>
+            </Link>
             <Link to="/profile" className="nav-link">
               <FaUser className="nav-icon" />
               <span>Profile</span>
@@ -77,6 +82,11 @@ const App: React.FC = () => {
           <Route path="/manage-products" element={
             <ProtectedRoute>
               <ManageProduct />
+            </ProtectedRoute>
+          } />
+          <Route path="/orders" element={
+            <ProtectedRoute>
+              <Orders />
             </ProtectedRoute>
           } />
           <Route path="/edit/:id" element={

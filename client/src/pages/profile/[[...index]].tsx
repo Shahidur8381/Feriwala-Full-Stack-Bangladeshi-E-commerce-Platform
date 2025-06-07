@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useUser, UserProfile } from '@clerk/nextjs';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
+import ReviewForm from '../../components/ReviewForm';
+import { getOrderStatus, getStatusBadgeClasses, getStatusProgress } from '../../utils/orderStatus';
 
 interface Order {
   orderId: string;
@@ -9,6 +11,16 @@ interface Order {
   total: number;
   status: string;
   createdAt: string;
+  items?: OrderItem[];
+}
+
+interface OrderItem {
+  id: number;
+  productId: number;
+  title: string;
+  price: number;
+  quantity: number;
+  image: string;
 }
 
 const ProfilePage: React.FC = () => {
@@ -16,6 +28,12 @@ const ProfilePage: React.FC = () => {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [selectedReviewProduct, setSelectedReviewProduct] = useState<{
+    orderId: string;
+    productId: number;
+    productTitle: string;
+  } | null>(null);
   // Redirect if not signed in
   React.useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -29,13 +47,28 @@ const ProfilePage: React.FC = () => {
       fetchOrders(user.primaryEmailAddress.emailAddress);
     }
   }, [user]);
-
   const fetchOrders = async (email: string) => {
     try {
       const response = await fetch(`http://localhost:5000/api/orders/customer/${email}`);
       if (response.ok) {
         const ordersData = await response.json();
-        setOrders(ordersData);
+        // Fetch order items for each order
+        const ordersWithItems = await Promise.all(
+          ordersData.map(async (order: Order) => {
+            try {
+              const itemsResponse = await fetch(`http://localhost:5000/api/orders/${order.orderId}/items`);
+              if (itemsResponse.ok) {
+                const items = await itemsResponse.json();
+                return { ...order, items };
+              }
+              return order;
+            } catch (error) {
+              console.error('Error fetching order items:', error);
+              return order;
+            }
+          })
+        );
+        setOrders(ordersWithItems);
       } else {
         console.error('Failed to fetch orders');
       }
@@ -44,6 +77,22 @@ const ProfilePage: React.FC = () => {
     } finally {
       setLoadingOrders(false);
     }
+  };
+
+  const handleReviewClick = (orderId: string, productId: number, productTitle: string) => {
+    setSelectedReviewProduct({ orderId, productId, productTitle });
+    setShowReviewForm(true);
+  };
+
+  const handleReviewSubmitted = () => {
+    setShowReviewForm(false);
+    setSelectedReviewProduct(null);
+    // Optionally refresh orders to update any review status
+  };
+
+  const handleReviewCancel = () => {
+    setShowReviewForm(false);
+    setSelectedReviewProduct(null);
   };
 
   if (!isLoaded || !isSignedIn) {
@@ -110,41 +159,114 @@ const ProfilePage: React.FC = () => {
               >
                 Start Shopping
               </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {orders.map(order => (
-                <div key={order.orderId} className="border rounded-lg p-4 hover:bg-gray-50">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium">Order #{order.orderId.substring(0, 8)}...</h3>
-                      <p className="text-sm text-gray-600">
-                        Placed on {new Date(order.createdAt).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-gray-600">Total: ${order.total.toFixed(2)}</p>
+            </div>          ) : (            <div className="space-y-6">
+              {orders.map(order => {
+                const statusInfo = getOrderStatus(order.status);
+                const progress = getStatusProgress(order.status);
+                
+                return (
+                  <div key={order.orderId} className="border rounded-lg p-6 hover:bg-gray-50">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-medium text-lg">Order #{order.orderId.substring(0, 8)}...</h3>
+                        <p className="text-sm text-gray-600">
+                          Placed on {new Date(order.createdAt).toLocaleDateString()}
+                        </p>
+                        <p className="text-lg font-semibold text-gray-800">Total: ${order.total.toFixed(2)}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={getStatusBadgeClasses(order.status)}>
+                          <span className="mr-1">{statusInfo.icon}</span>
+                          {statusInfo.label}
+                        </span>
+                        <div className="mt-2 space-y-1">
+                          <button
+                            onClick={() => router.push(`/orders/${order.orderId}`)}
+                            className="block text-blue-600 hover:text-blue-800 text-sm"
+                          >
+                            View Details
+                          </button>
+                          {order.status === 'unpaid' && (
+                            <button
+                              onClick={() => router.push(`/payment/${order.orderId}`)}
+                              className="block bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                            >
+                              Pay Now
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                        order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                        order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                        order.status === 'confirmed' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {order.status}
-                      </span>
-                      <button
-                        onClick={() => router.push(`/orders/${order.orderId}`)}
-                        className="block mt-2 text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        View Details
-                      </button>
+                    
+                    {/* Order Progress Bar */}
+                    <div className="mb-4">
+                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Order Progress</span>
+                        <span>{progress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                          style={{ width: `${progress}%` }}
+                        ></div>
+                      </div>
                     </div>
+                    
+                    <p className="text-xs text-gray-500 mb-4">{statusInfo.description}</p>
+
+                    {/* Order Items */}
+                    {order.items && order.items.length > 0 && (
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-3">Order Items:</h4>
+                        <div className="space-y-3">
+                          {order.items.map((item) => (
+                            <div key={item.id} className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden">
+                                  <img 
+                                    src={item.image 
+                                      ? `http://localhost:5000${item.image}` 
+                                      : '/imageWhenNoImage/NoImage.jpg'} 
+                                    alt={item.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-sm">{item.title}</p>
+                                  <p className="text-xs text-gray-600">Qty: {item.quantity} × ${item.price.toFixed(2)}</p>
+                                </div>
+                              </div>
+                              
+                              {/* Review button for delivered orders */}
+                              {order.status === 'delivered' && (
+                                <button
+                                  onClick={() => handleReviewClick(order.orderId, item.productId, item.title)}
+                                  className="bg-yellow-500 text-white px-3 py-1 rounded text-xs hover:bg-yellow-600"
+                                >
+                                  Write Review
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                );
+              })}
+            </div>          )}
         </div>
+
+        {/* Review Form Modal */}
+        {showReviewForm && selectedReviewProduct && (
+          <ReviewForm
+            orderId={selectedReviewProduct.orderId}
+            productId={selectedReviewProduct.productId}
+            productTitle={selectedReviewProduct.productTitle}
+            onReviewSubmitted={handleReviewSubmitted}
+            onCancel={handleReviewCancel}
+          />
+        )}
       </div>
     </Layout>
   );

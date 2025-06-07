@@ -4,6 +4,7 @@ import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { FaStar, FaStarHalfAlt, FaRegStar } from 'react-icons/fa';
+import { getOrderStatus, getStatusBadgeClasses, getStatusProgress, getAllOrderStatuses } from '../../utils/orderStatus';
 
 interface OrderItem {
   id: number;
@@ -295,16 +296,58 @@ const OrderDetailsPage: React.FC = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex justify-between items-start mb-6">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">          <div className="flex justify-between items-start mb-6">
             <div>
               <h1 className="text-2xl font-bold mb-2">Order #{order.orderId}</h1>
               <p className="text-gray-600">Placed on {new Date(order.createdAt).toLocaleDateString()}</p>
             </div>
             <div className="text-right">
-              <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                {order.status}
+              <span className={getStatusBadgeClasses(order.status)}>
+                <span className="mr-1">{getOrderStatus(order.status).icon}</span>
+                {getOrderStatus(order.status).label}
               </span>
+            </div>
+          </div>
+
+          {/* Order Status Progress */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <h3 className="font-semibold mb-4">Order Progress</h3>
+            <div className="mb-4">
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Progress</span>
+                <span>{getStatusProgress(order.status)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-blue-600 h-3 rounded-full transition-all duration-300" 
+                  style={{ width: `${getStatusProgress(order.status)}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            {/* Status Timeline */}
+            <div className="flex justify-between items-center text-xs">
+              {getAllOrderStatuses().map((status, index) => {
+                const currentStatusIndex = getAllOrderStatuses().findIndex(s => s.value === order.status);
+                const isCompleted = index <= currentStatusIndex;
+                const isCurrent = index === currentStatusIndex;
+                
+                return (
+                  <div key={status.value} className={`flex flex-col items-center ${isCompleted ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
+                      isCurrent ? 'bg-blue-600 text-white' : 
+                      isCompleted ? 'bg-blue-100 text-blue-600' : 'bg-gray-200'
+                    }`}>
+                      {status.icon}
+                    </div>
+                    <span className="text-center font-medium">{status.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="mt-3 text-sm text-gray-600">
+              <strong>Current Status:</strong> {getOrderStatus(order.status).description}
             </div>
           </div>
 
