@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { getToken } from '../utils/auths';
 import { FaEdit, FaTrash, FaCog, FaPlus, FaTools, FaSave, FaTimes, FaChartLine, FaBoxOpen, FaTag, FaShoppingCart } from "react-icons/fa";
 
@@ -155,7 +155,7 @@ const Dashboard: React.FC = () => {
       // Show error message
       const errorMessage = document.createElement('div');
       errorMessage.className = 'toast toast-error';
-      errorMessage.textContent = `Failed to update product: ${(error as any).response?.data?.error || (error as Error).message}`;
+      errorMessage.textContent = `Failed to update product: ${(error as AxiosError<{error: string}>).response?.data?.error || (error as Error).message}`;
       document.body.appendChild(errorMessage);
       
       setTimeout(() => {
@@ -191,7 +191,7 @@ const Dashboard: React.FC = () => {
         // Show error message
         const errorMessage = document.createElement('div');
         errorMessage.className = 'toast toast-error';
-        errorMessage.textContent = `Failed to delete product: ${(error as any).response?.data?.error || (error as Error).message}`;
+        errorMessage.textContent = `Failed to delete product: ${(error as AxiosError<{error: string}>).response?.data?.error || (error as Error).message}`;
         document.body.appendChild(errorMessage);
         
         setTimeout(() => {

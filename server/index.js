@@ -14,6 +14,7 @@ import createProductRoutes from './routes/productRoutes.js';
 import createOrderRoutes from './routes/orderRoutes.js';
 import createReviewRoutes from './routes/reviewRoutes.js';
 import createAdminRoutes from './routes/adminRoutes.js';
+import sellerAdminTokenRoutes from './routes/sellerAdminTokenRoutes.js';
 import verifySellerJWT from './middleware/verifySellerJWT.js';
 
 dotenv.config();
@@ -115,8 +116,23 @@ db.serialize(() => { // Use db.serialize to ensure sequential execution for tabl
   `, (err) => {
     if (err) {
       console.error('Error creating products table:', err.message);
+    } else {      console.log('Products table checked/created successfully.');
+    }
+  });
+
+  // Create seller admin token store table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS seller_admin_token_store (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      token TEXT UNIQUE NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      is_active BOOLEAN DEFAULT 1
+    )
+  `, (err) => {
+    if (err) {
+      console.error('Error creating seller_admin_token_store table:', err.message);
     } else {
-      console.log('Products table checked/created successfully.');
+      console.log('Seller admin token store table checked/created successfully.');
     }
   });
 });
@@ -129,6 +145,12 @@ app.use('/api/products', createProductRoutes(db, upload));
 app.use('/api/orders', createOrderRoutes(db));
 app.use('/api/reviews', createReviewRoutes(db));
 app.use('/api/admin', createAdminRoutes(db)); // Admin routes
+
+// Seller admin token routes (middleware to attach db)
+app.use('/api/seller-admin', (req, res, next) => {
+  req.db = db;
+  next();
+}, sellerAdminTokenRoutes);
 
 // Test protected route (ensure verifySellerJWT is correctly implemented)
 app.get('/api/test-protected', verifySellerJWT, (req, res) => {

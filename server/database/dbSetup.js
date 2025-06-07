@@ -53,6 +53,16 @@ export default function dbSetup() {
         FOREIGN KEY (shop_id) REFERENCES sellers(id)
       )
     `);
+
+    // Create seller admin token store table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS seller_admin_token_store (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        token TEXT UNIQUE NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        is_active BOOLEAN DEFAULT 1
+      )
+    `);
   });
 
   return db;
