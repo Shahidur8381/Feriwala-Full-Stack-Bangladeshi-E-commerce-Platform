@@ -1,14 +1,12 @@
-// server/index.js
-import express from 'express';
+import express from 'express'; 
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import sqlite3 from 'sqlite3';
+import sqlite3 from 'sqlite3'; 
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import multer from 'multer';
 import dotenv from 'dotenv';
-
 import createSellerRoutes from './routes/sellerRoutes.js';
 import createProductRoutes from './routes/productRoutes.js';
 import createOrderRoutes from './routes/orderRoutes.js';
@@ -30,7 +28,7 @@ if (!process.env.JWT_SECRET) {
 // Setup file uploads
 const uploadPath = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath, { recursive: true }); // Added { recursive: true } for robustness
+  fs.mkdirSync(uploadPath, { recursive: true });
   console.log(`Uploads directory created at ${uploadPath}`);
 }
 
@@ -50,14 +48,14 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use('/uploads', express.static(uploadPath));
 
-// Initialize SQLite DB
+
 const db = new sqlite3.Database('./ecommerce.db', (err) => {
   if (err) {
     console.error('DB connection error:', err.message);
   } else {
     console.log('Connected to SQLite database.');
     
-    // Enable foreign key constraints after connection is established
+    // Enable foreign key constraints
     db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
       if (pragmaErr) {
         console.error('Failed to enable foreign keys:', pragmaErr.message);
@@ -68,8 +66,8 @@ const db = new sqlite3.Database('./ecommerce.db', (err) => {
   }
 });
 
-// Create sellers table first (required for foreign key in products table)
-db.serialize(() => { // Use db.serialize to ensure sequential execution for table creation
+
+db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS sellers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,7 +85,6 @@ db.serialize(() => { // Use db.serialize to ensure sequential execution for tabl
     }
   });
 
-  // Create products table with seller_id and foreign key constraint
   db.run(`
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,12 +99,12 @@ db.serialize(() => { // Use db.serialize to ensure sequential execution for tabl
       stock INTEGER DEFAULT 0,
       deliverycharge_inside REAL DEFAULT 0,
       deliverycharge_outside REAL DEFAULT 0,
-      sold TEXT DEFAULT 0,        -- Consider JSON type or separate table for structured data
-      rating TEXT DEFAULT 0.0,      -- Consider JSON type or separate table
-      total_rating TEXT DEFAULT 0,-- Consider JSON type or separate table
-      reviews TEXT DEFAULT 'No reviews',     -- Consider JSON type or separate table
-      shopname TEXT DEFAULT '{}',    -- This might be redundant if linked to seller via seller_id
-      shopdetails TEXT DEFAULT '{}', -- This might be redundant if linked to seller via seller_id
+      sold TEXT DEFAULT 0,
+      rating TEXT DEFAULT 0.0,
+      total_rating TEXT DEFAULT 0,
+      reviews TEXT DEFAULT 'No reviews',
+      shopname TEXT DEFAULT '{}',
+      shopdetails TEXT DEFAULT '{}',
       tags TEXT DEFAULT '',
       image TEXT,
       seller_id INTEGER NOT NULL,
@@ -116,11 +113,11 @@ db.serialize(() => { // Use db.serialize to ensure sequential execution for tabl
   `, (err) => {
     if (err) {
       console.error('Error creating products table:', err.message);
-    } else {      console.log('Products table checked/created successfully.');
+    } else {
+      console.log('Products table checked/created successfully.');
     }
   });
 
-  // Create seller admin token store table
   db.run(`
     CREATE TABLE IF NOT EXISTS seller_admin_token_store (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -138,29 +135,27 @@ db.serialize(() => { // Use db.serialize to ensure sequential execution for tabl
 });
 
 // --- Route Mounting ---
-// Mounts seller routes. With the updated sellerRoutes.js having GET '/', 
-// this makes GET /api/sellers (to fetch all sellers) available.
 app.use('/api/sellers', createSellerRoutes(db, process.env.JWT_SECRET || 'your_fallback_secret_key')); 
 app.use('/api/products', createProductRoutes(db, upload));
-app.use('/api/orders', createOrderRoutes(db));
+app.use('/api/orders', createOrderRoutes(db)); // ✅ This will work now with sqlite3
 app.use('/api/reviews', createReviewRoutes(db));
-app.use('/api/admin', createAdminRoutes(db)); // Admin routes
+app.use('/api/admin', createAdminRoutes(db));
 
-// Seller admin token routes (middleware to attach db)
+// Seller admin token routes
 app.use('/api/seller-admin', (req, res, next) => {
   req.db = db;
   next();
 }, sellerAdminTokenRoutes);
 
-// Test protected route (ensure verifySellerJWT is correctly implemented)
+// Test protected route
 app.get('/api/test-protected', verifySellerJWT, (req, res) => {
   res.json({ 
     message: 'You accessed a protected route',
-    seller: req.seller // req.seller should be populated by verifySellerJWT middleware
+    seller: req.seller
   });
 });
 
-// Simple root route to indicate the backend is running
+// Root route
 app.get('/', (req, res) => {
   res.send('Backend for E-commerce API is running');
 });
