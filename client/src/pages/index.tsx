@@ -59,9 +59,9 @@ const HomePage: React.FC = () => {
         </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl animate-fade-in-up">
-            <span className="inline-block bg-white/15 text-sm px-4 py-1.5 rounded-full mb-4 font-medium backdrop-blur-sm">
-              🇧🇩 বাংলাদেশের #1 অনলাইন শপ
-            </span>
+            <div className="flex items-center gap-2 mb-4 bg-white/20 backdrop-blur-sm w-fit px-4 py-1.5 rounded-full text-white/90 shadow-sm border border-white/10 animate-fade-in-up">
+              🇧🇩 Bangladesh's #1 Online Shop
+            </div>
             <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
               Shop Smart, <br />
               <span className="text-yellow-300">Save Big</span> with FeriWala

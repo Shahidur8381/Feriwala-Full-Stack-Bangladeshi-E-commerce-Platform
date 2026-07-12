@@ -15,13 +15,13 @@ const Footer: React.FC = () => {
               <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center">
                 <span className="text-xl">🛒</span>
               </div>
-              <div>
+              <Link href="/" className="flex flex-col">
                 <h3 className="text-white font-bold text-lg">FeriWala</h3>
-                <p className="text-green-400 text-xs">ফেরিওয়ালা</p>
-              </div>
+                <p className="text-green-400 text-xs">The Vendor</p>
+              </Link>
             </div>
             <p className="text-sm leading-relaxed mb-4">
-              বাংলাদেশের সেরা অনলাইন শপিং প্ল্যাটফর্ম। Your trusted destination for quality products at the best prices.
+              Bangladesh's #1 online shopping platform. Your trusted destination for quality products at the best prices.
             </p>
             <div className="flex gap-3">
               <a href="https://facebook.com/SHAHIDUR8381" target="_blank" rel="noopener noreferrer"

@@ -108,7 +108,7 @@ const ProductForm: React.FC<Props> = ({ initialData, onSubmit }) => {
               {/* Price */}
               <div className="form-group">
                 <label className="form-label">
-                  Price ($) <span className="text-danger">*</span>
+                  Price (৳) <span className="text-danger">*</span>
                 </label>
                 <input 
                   type="number" 
@@ -161,7 +161,7 @@ const ProductForm: React.FC<Props> = ({ initialData, onSubmit }) => {
                 <div className="col col-md-6">
                   <div className="form-group">
                     <label className="form-label">
-                      Delivery Charge(Inside Dhaka) ($) <span className="text-danger">*</span>
+                      Delivery Charge(Inside Dhaka) (৳) <span className="text-danger">*</span>
                     </label>
                     <input 
                       type="number" 
@@ -178,7 +178,7 @@ const ProductForm: React.FC<Props> = ({ initialData, onSubmit }) => {
                 <div className="col col-md-6">
                   <div className="form-group">
                     <label className="form-label">
-                      Delivery Charge(Outside Dhaka) ($) <span className="text-danger">*</span>
+                      Delivery Charge(Outside Dhaka) (৳) <span className="text-danger">*</span>
                     </label>
                     <input 
                       type="number" 

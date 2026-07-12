@@ -249,7 +249,7 @@ const Dashboard: React.FC = () => {
             <FaChartLine />
           </div>
           <div className="stat-content">
-            <h3>${stats.averagePrice.toFixed(2)}</h3>
+            <h3>৳{stats.averagePrice.toFixed(2)}</h3>
             <p>Average Price</p>
           </div>
         </div>
@@ -315,7 +315,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     
                     <div className="form-group">
-                      <label>Price ($):</label>
+                      <label>Price (৳):</label>
                       <input
                         type="number"
                         value={tempPrice}
@@ -384,7 +384,7 @@ const Dashboard: React.FC = () => {
                       <div className="detail-row">
                         <span className="label">Price:</span>
                         <span className="value">
-                          ${product.price.toFixed(2)}
+                          ৳{product.price.toFixed(2)}
                           {product.discount && product.discount > 0 && (
                             <span className="discount">
                               (-{product.discount}%)

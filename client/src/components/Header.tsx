@@ -28,10 +28,10 @@ const Header: React.FC<HeaderProps> = ({ searchQuery = '' }) => {
       {/* Top Bar */}
       <div className="bg-gray-900 text-gray-300 text-xs py-1.5 px-4 hidden md:block">
         <div className="container mx-auto flex justify-between items-center">
-          <span>🇧🇩 বাংলাদেশের সেরা অনলাইন শপ</span>
+          <span>🇧🇩 Bangladesh's #1 Online Shop</span>
           <div className="flex gap-4">
             <Link href="/sellers" className="hover:text-white transition">All Shops</Link>
-            <span>📞 +880 1735 838381</span>
+            <span>✉️ Contact Developer: info@feriwala.com</span>
           </div>
         </div>
       </div>
@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery = '' }) => {
               </div>
               <div className="hidden sm:block">
                 <h1 className="text-white font-bold text-xl leading-tight tracking-tight">FeriWala</h1>
-                <p className="text-green-200 text-[10px] leading-tight font-medium">ফেরিওয়ালা</p>
+                <p className="text-green-200 text-[10px] leading-tight font-medium">The Vendor</p>
               </div>
             </Link>
 
