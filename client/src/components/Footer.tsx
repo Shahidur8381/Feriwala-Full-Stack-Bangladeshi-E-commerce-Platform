@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { FaFacebook, FaTwitter, FaInstagram, FaPhoneAlt, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaFacebook, FaGithub, FaLinkedin, FaPhoneAlt, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
 import TimeDisplay from '@/components/TimeDisplay';
 
 const Footer: React.FC = () => {
@@ -28,13 +28,13 @@ const Footer: React.FC = () => {
                 className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-600 transition-colors">
                 <FaFacebook className="text-sm" />
               </a>
-              <a href="https://x.com/SHAHIDUR8381" target="_blank" rel="noopener noreferrer"
-                className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-sky-500 transition-colors">
-                <FaTwitter className="text-sm" />
+              <a href="https://github.com/shahidur8381" target="_blank" rel="noopener noreferrer"
+                className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-600 transition-colors">
+                <FaGithub className="text-sm" />
               </a>
-              <a href="https://instagram.com/SHAWON8381" target="_blank" rel="noopener noreferrer"
-                className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-pink-600 transition-colors">
-                <FaInstagram className="text-sm" />
+              <a href="https://linkedin.com/in/shahidur8381" target="_blank" rel="noopener noreferrer"
+                className="w-9 h-9 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-blue-500 transition-colors">
+                <FaLinkedin className="text-sm" />
               </a>
             </div>
           </div>

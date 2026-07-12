@@ -31,7 +31,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery = '' }) => {
           <span>🇧🇩 Bangladesh's #1 Online Shop</span>
           <div className="flex gap-4">
             <Link href="/sellers" className="hover:text-white transition">All Shops</Link>
-            <span>✉️ Contact Developer: info@feriwala.com</span>
+            <span>✉️ Contact Developer: shahidur8381@gmail.com</span>
           </div>
         </div>
       </div>
