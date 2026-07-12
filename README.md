@@ -74,6 +74,7 @@ graph TD
 The application is fully containerized/configured for modern cloud hosting:
 
 - **Backend (API)**: Deployed on **Railway** for long-running Node.js processes.
+  > ⚠️ **Note on Image Uploads:** Railway uses ephemeral file storage, meaning images uploaded via Multer (local disk) will be lost upon subsequent redeploys. In the future, this will be migrated to **Supabase Storage** for persistent, cloud-based asset management.
 - **Frontends (UI)**: Deployed globally on the **Vercel** Edge Network with custom SPA rewrite rules (`vercel.json`).
 - **Database**: Hosted on **Supabase** (PostgreSQL).
 
