@@ -62,7 +62,7 @@ const HomePage: React.FC = () => {
         <img 
           src="/feriwala-logo.png" 
           alt="FeriWala Logo" 
-          className="hidden md:block absolute top-10 left-10 w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl z-20"
+          className="hidden md:block absolute top-10 right-10 w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl z-20"
           style={{ animation: 'float 6s ease-in-out infinite' }} 
         />
 
