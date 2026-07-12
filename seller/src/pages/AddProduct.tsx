@@ -22,7 +22,7 @@ const AddProduct: React.FC = () => {
       await axios.post(`${import.meta.env.VITE_API_URL}/api/products`, formData, {
         headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
       });
-      toast.error('Product added!');
+      toast.success('Product added!');
       navigate('/');
     } catch (error) {
       console.error('Error adding product:', error);
