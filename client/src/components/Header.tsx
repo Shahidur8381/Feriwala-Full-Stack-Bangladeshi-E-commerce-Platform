@@ -28,7 +28,7 @@ const Header: React.FC<HeaderProps> = ({ searchQuery = '' }) => {
       {/* Top Bar */}
       <div className="bg-gray-900 text-gray-300 text-xs py-1.5 px-4 hidden md:block">
         <div className="container mx-auto flex justify-between items-center">
-          <span>🇧🇩 বাংলাদেশের সেরা অনলাইন শপ | Free delivery on orders over ৳999</span>
+          <span>🇧🇩 বাংলাদেশের সেরা অনলাইন শপ</span>
           <div className="flex gap-4">
             <Link href="/sellers" className="hover:text-white transition">All Shops</Link>
             <span>📞 +880 1735 838381</span>
