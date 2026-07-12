@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React from 'react';
 import Layout from '../components/Layout';
 import { useCart } from '../contexts/CartContext';
@@ -33,7 +34,7 @@ const CartPage: React.FC = () => {
     }
     
     if (newQuantity > itemStock) {
-      alert(`Sorry, only ${itemStock} items are available in stock.`);
+      toast.error(`Sorry, only ${itemStock} items are available in stock.`);
       return;
     }
     

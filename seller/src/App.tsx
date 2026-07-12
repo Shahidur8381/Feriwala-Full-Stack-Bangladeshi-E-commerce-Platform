@@ -1,5 +1,6 @@
 import React from "react";
 import { Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import Dashboard from "./pages/Dashboard";
 import AddProduct from "./pages/AddProduct";
 import EditProduct from "./pages/EditProduct";
@@ -28,6 +29,7 @@ const App: React.FC = () => {
 
   return (
     <div className="app-container">
+      <Toaster position="top-right" />
       {isLoggedIn() && (
         <nav className="main-nav">
           <div className="nav-brand">

@@ -7,6 +7,8 @@ import Footer from '../components/Footer';
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
 
+import { Toaster } from 'react-hot-toast';
+
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
@@ -17,6 +19,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       <AuthProvider>
         <CartProvider>
           <Component {...pageProps} />
+          <Toaster position="top-center" />
         </CartProvider>
       </AuthProvider>
     </>

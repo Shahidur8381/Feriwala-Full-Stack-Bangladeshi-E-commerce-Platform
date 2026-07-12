@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useUser } from '../../contexts/AuthContext';
 import Layout from '../../components/Layout';
+import toast from 'react-hot-toast';
 
 interface PaymentData {
   paymentMethod: string;
@@ -89,11 +90,11 @@ const PaymentPage: React.FC = () => {
         // Redirect to SSLCommerz payment page
         window.location.href = data.url;
       } else {
-        alert(`Failed to initiate payment gateway: ${data.error || 'Unknown error'}`);
+        toast.error(`Failed to initiate payment gateway: ${data.error || 'Unknown error'}`);
         setSslLoading(false);
       }
     } catch (error) {
-      alert('Failed to connect to payment gateway. Please try again.');
+      toast.error('Failed to connect to payment gateway. Please try again.');
       setSslLoading(false);
     }
   };
@@ -102,7 +103,7 @@ const PaymentPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!paymentData.paymentMethod || !paymentData.paymentAccount || !paymentData.transactionId) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
     setSubmitting(true);
@@ -113,14 +114,14 @@ const PaymentPage: React.FC = () => {
         body: JSON.stringify(paymentData),
       });
       if (response.ok) {
-        alert('Payment information submitted successfully! Your order status has been updated to pending.');
+        toast.success('Payment information submitted successfully! Your order status has been updated to pending.');
         router.push(`/orders/${orderId}`);
       } else {
         const error = await response.json();
-        alert(`Payment submission failed: ${error.error}`);
+        toast.error(`Payment submission failed: ${error.error}`);
       }
     } catch (error) {
-      alert('Failed to submit payment information. Please try again.');
+      toast.error('Failed to submit payment information. Please try again.');
     } finally {
       setSubmitting(false);
     }

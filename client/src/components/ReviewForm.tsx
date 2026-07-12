@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState } from 'react';
 import { useUser } from '../contexts/AuthContext';
 
@@ -26,7 +27,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
     e.preventDefault();
     
     if (rating === 0) {
-      alert('Please select a rating');
+      toast.error('Please select a rating');
       return;
     }
 
@@ -48,15 +49,15 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
       });
 
       if (response.ok) {
-        alert('Review submitted successfully!');
+        toast.success('Review submitted successfully!');
         onReviewSubmitted();
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to submit review');
+        toast.error(error.error || 'Failed to submit review');
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      alert('Failed to submit review. Please try again.');
+      toast.error('Failed to submit review. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

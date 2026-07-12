@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { getToken } from "../utils/auths";
@@ -49,7 +50,7 @@ const Orders: React.FC = () => {
       setOrders(res.data);
     } catch (error) {
       console.error("Failed to fetch orders", error);
-      alert("Failed to fetch orders. Please try again.");
+      toast.error("Failed to fetch orders. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -67,10 +68,10 @@ const Orders: React.FC = () => {
         }
       );
       await fetchOrders();
-      alert("Order status updated successfully!");
+      toast.success("Order status updated successfully!");
     } catch (error) {
       console.error("Failed to update order status", error);
-      alert("Failed to update order status. Please try again.");
+      toast.error("Failed to update order status. Please try again.");
     } finally {
       setUpdatingStatus(null);
     }

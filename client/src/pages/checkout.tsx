@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { useCart } from '../contexts/CartContext';
@@ -106,7 +107,7 @@ const CheckoutPage: React.FC = () => {
   const handlePlaceOrder = async () => {
     // Validate required fields
     if (!orderData.customerName || !orderData.customerPhone || !orderData.customerAddress) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -144,7 +145,7 @@ const CheckoutPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error placing order:', error);
-      alert('Failed to place order. Please try again.');
+      toast.error('Failed to place order. Please try again.');
     } finally {
       setIsLoading(false);
     }

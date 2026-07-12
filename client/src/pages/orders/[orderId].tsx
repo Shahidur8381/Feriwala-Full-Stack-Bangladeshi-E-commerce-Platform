@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import { useUser } from '../../contexts/AuthContext';
@@ -123,7 +124,7 @@ const OrderDetailsPage: React.FC = () => {
     const existingReview = existingReviews[productId];
     
     if (!review || !review.rating || !review.comment) {
-      alert('Please provide both rating and comment');
+      toast.error('Please provide both rating and comment');
       return;
     }
 
@@ -161,7 +162,7 @@ const OrderDetailsPage: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        alert(existingReview ? 'Review updated successfully!' : 'Review submitted successfully!');
+        toast.success(existingReview ? 'Review updated successfully!' : 'Review submitted successfully!');
         
         // Update existing reviews state
         if (existingReview) {
@@ -200,7 +201,7 @@ const OrderDetailsPage: React.FC = () => {
     } catch (error) {
       console.error('Error submitting review:', error);
       const errorMessage = error instanceof Error ? error.message : 'Please try again.';
-      alert(`Failed to ${existingReview ? 'update' : 'submit'} review: ${errorMessage}`);
+      toast.error(`Failed to ${existingReview ? 'update' : 'submit'} review: ${errorMessage}`);
     } finally {
       setSubmittingReview(null);
     }

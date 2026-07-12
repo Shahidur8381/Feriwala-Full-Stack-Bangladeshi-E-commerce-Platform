@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useUser } from './AuthContext';
 import { useRouter } from 'next/router';
@@ -70,7 +71,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         // Check if adding quantity would exceed stock
         const newQuantity = existingItem.quantity + quantity;
         if (newQuantity > product.stock) {
-          alert(`Only ${product.stock} items available in stock. You currently have ${existingItem.quantity} in your cart.`);
+          toast.error(`Only ${product.stock} items available in stock. You currently have ${existingItem.quantity} in your cart.`);
           return prevItems;
         }
         
@@ -83,7 +84,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       } else {
         // Check if requested quantity exceeds stock for new item
         if (quantity > product.stock) {
-          alert(`Only ${product.stock} items available in stock.`);
+          toast.error(`Only ${product.stock} items available in stock.`);
           return prevItems;
         }
         
@@ -107,7 +108,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         if (item.id === productId) {
           // Check if new quantity exceeds stock
           if (quantity > item.stock) {
-            alert(`Only ${item.stock} items available in stock.`);
+            toast.error(`Only ${item.stock} items available in stock.`);
             return item; // Return unchanged item
           }
           return { ...item, quantity };
@@ -145,7 +146,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       if (hasStockIssues) {
         setCartItems(updatedItems);
-        alert('Some items in your cart had their quantities adjusted due to stock changes.');
+        toast.error('Some items in your cart had their quantities adjusted due to stock changes.');
       }
     } catch (error) {
       console.error('Error validating cart stock:', error);

@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
@@ -293,7 +294,7 @@ const ProductDetailsPage: React.FC = () => {
   };
   const handleReviewSubmit = async () => {
     if (!reviewForm.rating || !reviewForm.comment.trim()) {
-      alert('Please provide both rating and comment');
+      toast.error('Please provide both rating and comment');
       return;
     }
 
@@ -335,7 +336,7 @@ const ProductDetailsPage: React.FC = () => {
           }
 
           if (!orderId) {
-            alert('You must purchase this product before reviewing it.');
+            toast.error('You must purchase this product before reviewing it.');
             return;
           }
 
@@ -354,13 +355,13 @@ const ProductDetailsPage: React.FC = () => {
           });
         } catch (ordersError) {
           console.error('Error fetching orders:', ordersError);
-          alert('Failed to verify purchase history. Please try again.');
+          toast.error('Failed to verify purchase history. Please try again.');
           return;
         }
       }
 
       if (response?.ok) {
-        alert(isEditingReview ? 'Review updated successfully!' : 'Review submitted successfully!');
+        toast.success(isEditingReview ? 'Review updated successfully!' : 'Review submitted successfully!');
 
         // Refresh reviews and summary
         const [reviewsResponse, summaryResponse] = await Promise.all([
@@ -417,7 +418,7 @@ const ProductDetailsPage: React.FC = () => {
     } catch (error) {
       console.error('Error submitting review:', error);
       const errorMessage = error instanceof Error ? error.message : 'Please try again.';
-      alert(`Failed to ${isEditingReview ? 'update' : 'submit'} review: ${errorMessage}`);
+      toast.error(`Failed to ${isEditingReview ? 'update' : 'submit'} review: ${errorMessage}`);
     } finally {
       setSubmittingReview(false);
     }
@@ -449,12 +450,12 @@ const ProductDetailsPage: React.FC = () => {
 
     // Check if requested quantity is available
     if (quantity > product.stock) {
-      alert(`Only ${product.stock} items available in stock.`);
+      toast.error(`Only ${product.stock} items available in stock.`);
       return;
     }
 
     if (product.stock === 0) {
-      alert('This product is out of stock.');
+      toast.error('This product is out of stock.');
       return;
     }
 
@@ -463,13 +464,13 @@ const ProductDetailsPage: React.FC = () => {
       addToCart(product, quantity);
 
       // Show success feedback
-      alert(`${quantity} ${product.title} added to cart. Redirecting to checkout...`);
+      toast.success(`${quantity} ${product.title} added to cart. Redirecting to checkout...`);
 
       // Redirect to checkout
       router.push('/checkout');
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('Failed to add item to cart. Please try again.');
+      toast.error('Failed to add item to cart. Please try again.');
     }
   };
 
@@ -632,19 +633,19 @@ const ProductDetailsPage: React.FC = () => {
               <button
                 onClick={() => {
                   if (product.stock === 0) {
-                    alert('This product is out of stock.');
+                    toast.error('This product is out of stock.');
                     return;
                   }
                   if (quantity > product.stock) {
-                    alert(`Only ${product.stock} items available in stock.`);
+                    toast.error(`Only ${product.stock} items available in stock.`);
                     return;
                   }
                   try {
                     addToCart(product, quantity);
-                    alert(`${quantity} ${product.title} added to cart`);
+                    toast.success(`${quantity} ${product.title} added to cart`);
                   } catch (error) {
                     console.error('Error adding to cart:', error);
-                    alert('Failed to add item to cart. Please try again.');
+                    toast.error('Failed to add item to cart. Please try again.');
                   }
                 }}
                 disabled={product.stock === 0}

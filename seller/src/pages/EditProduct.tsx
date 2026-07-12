@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -57,7 +58,7 @@ const EditProduct: React.FC = () => {
         }
       } catch (error) {
         console.error("Failed to load product", error);
-        alert("Failed to load product. Please try again.");
+        toast.error("Failed to load product. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -69,7 +70,7 @@ const EditProduct: React.FC = () => {
   const handleSubmit = async (formData: FormData) => {
     try {
       if (!token) {
-        alert('Authentication required');
+        toast.error('Authentication required');
         navigate('/login');
         return;
       }
@@ -96,11 +97,11 @@ const EditProduct: React.FC = () => {
           },
         }
       );
-      alert("Product updated successfully!");
+      toast.success("Product updated successfully!");
       navigate("/manage-products");
     } catch (error) {
       console.error("Failed to update product", error);
-      alert("Failed to update product. Please try again.");
+      toast.error("Failed to update product. Please try again.");
     }
   };
 

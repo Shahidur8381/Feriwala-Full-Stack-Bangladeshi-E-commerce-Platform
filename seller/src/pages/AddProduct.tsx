@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -21,11 +22,11 @@ const AddProduct: React.FC = () => {
       await axios.post(`${import.meta.env.VITE_API_URL}/api/products`, formData, {
         headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
       });
-      alert('Product added!');
+      toast.error('Product added!');
       navigate('/');
     } catch (error) {
       console.error('Error adding product:', error);
-      alert('Failed to add product');
+      toast.error('Failed to add product');
     }
   };
 

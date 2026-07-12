@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ProductForm from "../components/ProductForm";
@@ -73,7 +74,7 @@ const ManageProduct: React.FC = () => {
       fetchProducts();
     } catch (error) {
       console.error("Failed to delete product", error);
-      alert("Failed to delete product. Please try again.");
+      toast.error("Failed to delete product. Please try again.");
     }
   };
 
@@ -106,7 +107,7 @@ const ManageProduct: React.FC = () => {
             },
           }
         );
-        alert("Product updated successfully");
+        toast.success("Product updated successfully");
       } else {
         await axios.post(`${import.meta.env.VITE_API_URL}/api/products`, formData, {
           headers: {
@@ -114,14 +115,14 @@ const ManageProduct: React.FC = () => {
             Authorization: `Bearer ${token}`,
           },
         });
-        alert("Product added successfully");
+        toast.success("Product added successfully");
       }
 
       setEditingProduct(null);
       fetchProducts();
     } catch (error) {
       console.error("Error saving product", error);
-      alert("Failed to save product: " + (error instanceof Error ? error.message : "Unknown error"));
+      toast.error("Failed to save product: " + (error instanceof Error ? error.message : "Unknown error"));
     }
   };
 
