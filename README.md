@@ -39,7 +39,9 @@ This project was built to solve the unique challenges of e-commerce in Banglades
 - **Real-World Payment Integration**: Successfully implements the **SSLCommerz** payment gateway API with secure webhook fallbacks and database transaction mapping.
 - **Enterprise-Grade Security**: Features Helmet-hardened HTTP headers, strict CORS whitelisting, and stateless JWT authentication via Supabase Auth.
 - **Optimized Data Layer**: Uses parameterized PostgreSQL queries with pg.Pool to prevent SQL injection and ensure high performance under load.
-- **Premium UI/UX**: Custom design system built with Tailwind CSS, featuring staggered micro-animations, glassmorphism, and fully responsive layouts.
+- **Premium UI/UX**: Custom design system built with Tailwind CSS, featuring staggered micro-animations, glassmorphism, and fully responsive layouts (e.g., adaptive cart cards and dynamic hero layouts).
+- **Modern Interactions**: Eliminated native browser blockages by implementing globally synchronized, animated toast notifications (`react-hot-toast`) across all storefronts and dashboards.
+- **Localized Experience**: Curated specifically for the Bangladeshi market, utilizing English standardizations while natively integrating local context (like the ৳ currency symbol and local delivery logistics).
 
 ---
 
