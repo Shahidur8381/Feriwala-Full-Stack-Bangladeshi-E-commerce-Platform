@@ -27,7 +27,8 @@ button {
 
 /* Body Styling */
 body {
-  background-color: #f9f9f9;
+  background: linear-gradient(135deg, #f0fdf4, #e0f2fe, #f3e8ff);
+  background-attachment: fixed;
   color: #333;
   line-height: 1.6;
 }
