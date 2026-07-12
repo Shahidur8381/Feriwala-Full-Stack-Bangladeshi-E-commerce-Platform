@@ -15,6 +15,18 @@
 
 <br />
 
+<div align="center">
+  <h3>🚀 Live Demos</h3>
+  <p>
+    <a href="https://feriwala-client.vercel.app/" target="_blank">🛒 Customer Storefront</a> | 
+    <a href="https://feriwala-seller.vercel.app/" target="_blank">🏪 Seller Dashboard</a> | 
+    <a href="https://feriwala-admin.vercel.app/" target="_blank">🔐 Master Admin Tool</a>
+  </p>
+  <p><i>Backend API is running on Railway: <code>https://feriwala-full-stack-bangladeshi-e-commerce-platf-production.up.railway.app</code></i></p>
+</div>
+
+<br />
+
 ## 📖 Overview
 
 FeriWala is a comprehensive, production-ready e-commerce solution designed to handle complex multi-vendor relationships. Built as a **monorepo containing four independent applications**, it demonstrates an advanced understanding of modern web architecture, secure authentication flows, and real-world payment integrations.
