@@ -109,7 +109,7 @@ const CartPage: React.FC = () => {
                             <div className="h-16 w-16 relative flex-shrink-0">
                               <Image 
                                 src={item.image 
-                                  ? `${process.env.NEXT_PUBLIC_API_URL}${item.image}` 
+                                  ? (item.image.startsWith('http') ? item.image : `${process.env.NEXT_PUBLIC_API_URL}${item.image}`)
                                   : '/imageWhenNoImage/NoImage.jpg'} 
                                 alt={item.title}
                                 fill={true}

@@ -40,7 +40,7 @@ const ProductForm: React.FC<Props> = ({ initialData, onSubmit }) => {
 
   useEffect(() => {
     if (initialData?.image) {
-      setPreviewImage(`${import.meta.env.VITE_API_URL}${initialData.image}`);
+      setPreviewImage(initialData.image?.startsWith('http') ? initialData.image : `${import.meta.env.VITE_API_URL}${initialData.image}`);
     }
   }, [initialData]);
 

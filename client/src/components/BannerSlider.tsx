@@ -65,7 +65,7 @@ const BannerSlider: React.FC = () => {
       <Slider {...settings}>
         {banners.map((banner) => {
           const imageUrl = banner.image 
-            ? `${process.env.NEXT_PUBLIC_API_URL}${banner.image}` 
+            ? (banner.image.startsWith('http') ? banner.image : `${process.env.NEXT_PUBLIC_API_URL}${banner.image}`)
             : '/imageWhenNoImage/NoImage.jpg';
           
           return (

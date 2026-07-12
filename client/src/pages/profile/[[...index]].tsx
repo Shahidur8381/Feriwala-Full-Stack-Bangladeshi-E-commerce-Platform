@@ -220,7 +220,7 @@ const ProfilePage: React.FC = () => {
                                 <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden">
                                   <img 
                                     src={item.image 
-                                      ? `${process.env.NEXT_PUBLIC_API_URL}${item.image}` 
+                                      ? (item.image.startsWith('http') ? item.image : `${process.env.NEXT_PUBLIC_API_URL}${item.image}`)
                                       : '/imageWhenNoImage/NoImage.jpg'} 
                                     alt={item.title}
                                     className="w-full h-full object-cover"

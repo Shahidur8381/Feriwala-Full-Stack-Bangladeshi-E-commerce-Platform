@@ -90,7 +90,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   // Create a valid image URL or use a fallback
   const imageUrl = product.image 
-    ? `${process.env.NEXT_PUBLIC_API_URL}${product.image}` 
+    ? (product.image.startsWith('http') ? product.image : `${process.env.NEXT_PUBLIC_API_URL}${product.image}`)
     : '/imageWhenNoImage/NoImage.jpg';
 
   // Determine the price to display based on discount validity

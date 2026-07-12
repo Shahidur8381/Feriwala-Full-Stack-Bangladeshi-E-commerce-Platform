@@ -498,7 +498,7 @@ const ProductDetailsPage: React.FC = () => {
           <div className="relative h-96 rounded-lg overflow-hidden">
             <Image 
               src={product.image 
-                ? `${process.env.NEXT_PUBLIC_API_URL}${product.image}` 
+                ? (product.image.startsWith('http') ? product.image : `${process.env.NEXT_PUBLIC_API_URL}${product.image}`)
                 : '/imageWhenNoImage/NoImage.jpg'} 
               alt={product.title}
               fill={true}

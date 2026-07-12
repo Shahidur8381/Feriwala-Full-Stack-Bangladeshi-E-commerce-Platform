@@ -370,7 +370,7 @@ const Dashboard: React.FC = () => {
                   <>
                     <div className="product-image">
                       <img 
-                        src={`${import.meta.env.VITE_API_URL}${product.image}`} 
+                        src={product.image?.startsWith('http') ? product.image : `${import.meta.env.VITE_API_URL}${product.image}`} 
                         alt={product.title} 
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=No+Image';
