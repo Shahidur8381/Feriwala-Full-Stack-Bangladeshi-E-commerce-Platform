@@ -30,17 +30,22 @@ const createAdminRoutes = (db) => {
   // Apply JWT middleware to all admin routes
   router.use(verifySellerJWT);
 
-  // Get all orders (admin only)
+  // Get all orders for the specific seller
   router.get('/orders', async (req, res) => {
     try {
+      const sellerId = req.seller.id;
+      if (!sellerId) return res.status(403).json({ error: 'Seller profile required' });
+
       const { rows } = await pool.query(`
         SELECT o.*,
                STRING_AGG(oi.title || ' (x' || oi.quantity || ')', ', ') as items
         FROM orders o
-        LEFT JOIN order_items oi ON o.orderid = oi.orderid
+        JOIN order_items oi ON o.orderid = oi.orderid
+        JOIN products p ON oi.productid = p.id
+        WHERE p.seller_id = $1
         GROUP BY o.orderid
         ORDER BY o.createdat DESC
-      `);
+      `, [sellerId]);
       res.json(rows.map(row => ({ ...normalizeOrder(row), items: row.items ?? null })));
     } catch (err) {
       console.error('Error fetching orders:', err.message);
@@ -48,11 +53,13 @@ const createAdminRoutes = (db) => {
     }
   });
 
-  // Update order status (admin only)
+  // Update order status (seller only if they own items in it)
   router.patch('/orders/:orderId/status', async (req, res) => {
     const { orderId } = req.params;
     const { status } = req.body;
+    const sellerId = req.seller.id;
 
+    if (!sellerId) return res.status(403).json({ error: 'Seller profile required' });
     if (!status) return res.status(400).json({ error: 'Status is required' });
 
     const validStatuses = ['unpaid', 'pending', 'paid', 'ready_to_ship', 'shipped', 'out_for_delivery', 'delivered'];
@@ -61,6 +68,18 @@ const createAdminRoutes = (db) => {
     }
 
     try {
+      // Verify order belongs to this seller
+      const { rows: verifyRows } = await pool.query(`
+        SELECT 1 FROM order_items oi
+        JOIN products p ON oi.productid = p.id
+        WHERE oi.orderid = $1 AND p.seller_id = $2
+        LIMIT 1
+      `, [orderId, sellerId]);
+
+      if (verifyRows.length === 0) {
+        return res.status(403).json({ error: 'You do not have permission to update this order' });
+      }
+
       const { rowCount } = await pool.query(
         'UPDATE orders SET status = $1 WHERE orderid = $2',
         [status, orderId]
