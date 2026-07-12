@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useUser, UserProfile } from '@clerk/nextjs';
+import { useUser } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import ReviewForm from '../../components/ReviewForm';
@@ -49,14 +49,14 @@ const ProfilePage: React.FC = () => {
   }, [user]);
   const fetchOrders = async (email: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/customer/${email}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/customer/${email}`);
       if (response.ok) {
         const ordersData = await response.json();
         // Fetch order items for each order
         const ordersWithItems = await Promise.all(
           ordersData.map(async (order: Order) => {
             try {
-              const itemsResponse = await fetch(`http://localhost:5000/api/orders/${order.orderId}/items`);
+              const itemsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${order.orderId}/items`);
               if (itemsResponse.ok) {
                 const items = await itemsResponse.json();
                 return { ...order, items };
@@ -95,7 +95,7 @@ const ProfilePage: React.FC = () => {
     setSelectedReviewProduct(null);
   };
 
-  if (!isLoaded || !isSignedIn) {
+  if (!isLoaded || !isSignedIn || !user) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">
@@ -137,11 +137,6 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Clerk's built-in profile management */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-bold mb-4">Manage Account</h2>
-          <UserProfile routing="path" path="/profile" />
-        </div>        
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-bold mb-4">Order History</h2>
           {loadingOrders ? (
@@ -225,7 +220,7 @@ const ProfilePage: React.FC = () => {
                                 <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden">
                                   <img 
                                     src={item.image 
-                                      ? `http://localhost:5000${item.image}` 
+                                      ? `${process.env.NEXT_PUBLIC_API_URL}${item.image}` 
                                       : '/imageWhenNoImage/NoImage.jpg'} 
                                     alt={item.title}
                                     className="w-full h-full object-cover"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 
 interface TokenData {
@@ -27,7 +27,7 @@ function App() {
   // Fetch current active token from database
   const fetchCurrentToken = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/seller-admin/token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/seller-admin/token`);
       if (response.ok) {
         const data = await response.json();
         setCurrentToken(data.token || '');
@@ -40,7 +40,7 @@ function App() {
   // Fetch token history
   const fetchTokenHistory = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/seller-admin/tokens/history');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/seller-admin/tokens/history`);
       if (response.ok) {
         const data = await response.json();
         setTokenHistory(data);
@@ -58,7 +58,7 @@ function App() {
     try {
       const newToken = generateToken();
       
-      const response = await fetch('http://localhost:5000/api/seller-admin/token', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/seller-admin/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,7 +1,7 @@
 import express from 'express'; 
 import cors from 'cors';
-import bodyParser from 'body-parser';
-import sqlite3 from 'sqlite3'; 
+import helmet from 'helmet';
+import db from './database/supabaseDb.js'; 
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -12,6 +12,7 @@ import createProductRoutes from './routes/productRoutes.js';
 import createOrderRoutes from './routes/orderRoutes.js';
 import createReviewRoutes from './routes/reviewRoutes.js';
 import createAdminRoutes from './routes/adminRoutes.js';
+import createPaymentRoutes from './routes/paymentRoutes.js';
 import sellerAdminTokenRoutes from './routes/sellerAdminTokenRoutes.js';
 import verifySellerJWT from './middleware/verifySellerJWT.js';
 
@@ -19,17 +20,21 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const isProd = process.env.NODE_ENV === 'production';
 
-// Validate JWT_SECRET
+// ── Security: Validate critical env vars ─────────────────────────────────────
 if (!process.env.JWT_SECRET) {
-  console.warn('Warning: JWT_SECRET is not set in .env. Using a default or expecting fallback in route modules.');
+  console.warn('[WARN] JWT_SECRET is not set. Using fallback — set this in production!');
+}
+if (!process.env.DATABASE_URL) {
+  console.error('[FATAL] DATABASE_URL is not set. Exiting.');
+  process.exit(1);
 }
 
-// Setup file uploads
+// ── File Uploads ─────────────────────────────────────────────────────────────
 const uploadPath = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
-  console.log(`Uploads directory created at ${uploadPath}`);
 }
 
 const storage = multer.diskStorage({
@@ -39,107 +44,59 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   },
 });
-const upload = multer({ storage });
-
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-app.use(cors());
-app.use(bodyParser.json());
-app.use('/uploads', express.static(uploadPath));
-
-
-const db = new sqlite3.Database('./ecommerce.db', (err) => {
-  if (err) {
-    console.error('DB connection error:', err.message);
-  } else {
-    console.log('Connected to SQLite database.');
-    
-    // Enable foreign key constraints
-    db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
-      if (pragmaErr) {
-        console.error('Failed to enable foreign keys:', pragmaErr.message);
-      } else {
-        console.log('Foreign keys enabled for SQLite.');
-      }
-    });
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files (jpg, png, gif, webp) are allowed'));
+    }
   }
 });
 
+// ── Express App ──────────────────────────────────────────────────────────────
+const app = express();
+const PORT = process.env.PORT || 5000;
 
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS sellers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      shopName TEXT NOT NULL,
-      shopDetails TEXT
-    )
-  `, (err) => {
-    if (err) {
-      console.error('Error creating sellers table:', err.message);
+// Security headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin image loading
+}));
+
+// CORS — whitelist allowed origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
+  : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4000'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
     } else {
-      console.log('Sellers table checked/created successfully.');
+      console.warn(`[CORS] Blocked request from: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
-  });
+  },
+  credentials: true,
+}));
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS products (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      description TEXT,
-      price REAL NOT NULL,
-      discount REAL DEFAULT 0,
-      discount_validity TEXT,
-      final_price REAL,
-      category TEXT NOT NULL,
-      brand TEXT DEFAULT 'none',
-      stock INTEGER DEFAULT 0,
-      deliverycharge_inside REAL DEFAULT 0,
-      deliverycharge_outside REAL DEFAULT 0,
-      sold TEXT DEFAULT 0,
-      rating TEXT DEFAULT 0.0,
-      total_rating TEXT DEFAULT 0,
-      reviews TEXT DEFAULT 'No reviews',
-      shopname TEXT DEFAULT '{}',
-      shopdetails TEXT DEFAULT '{}',
-      tags TEXT DEFAULT '',
-      image TEXT,
-      seller_id INTEGER NOT NULL,
-      FOREIGN KEY (seller_id) REFERENCES sellers(id) ON DELETE CASCADE
-    )
-  `, (err) => {
-    if (err) {
-      console.error('Error creating products table:', err.message);
-    } else {
-      console.log('Products table checked/created successfully.');
-    }
-  });
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(uploadPath));
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS seller_admin_token_store (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      token TEXT UNIQUE NOT NULL,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      is_active BOOLEAN DEFAULT 1
-    )
-  `, (err) => {
-    if (err) {
-      console.error('Error creating seller_admin_token_store table:', err.message);
-    } else {
-      console.log('Seller admin token store table checked/created successfully.');
-    }
-  });
-});
-
-// --- Route Mounting ---
-app.use('/api/sellers', createSellerRoutes(db, process.env.JWT_SECRET || 'your_fallback_secret_key')); 
+// ── Route Mounting ───────────────────────────────────────────────────────────
+app.use('/api/sellers', createSellerRoutes(db)); 
 app.use('/api/products', createProductRoutes(db, upload));
-app.use('/api/orders', createOrderRoutes(db)); // ✅ This will work now with sqlite3
+app.use('/api/orders', createOrderRoutes(db));
 app.use('/api/reviews', createReviewRoutes(db));
 app.use('/api/admin', createAdminRoutes(db));
+app.use('/api/payment', createPaymentRoutes(db));
 
 // Seller admin token routes
 app.use('/api/seller-admin', (req, res, next) => {
@@ -147,25 +104,23 @@ app.use('/api/seller-admin', (req, res, next) => {
   next();
 }, sellerAdminTokenRoutes);
 
-// Test protected route
-app.get('/api/test-protected', verifySellerJWT, (req, res) => {
-  res.json({ 
-    message: 'You accessed a protected route',
-    seller: req.seller
+// Health check
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'FeriWala API is running', timestamp: new Date().toISOString() });
+});
+
+// ── Global Error Handler ─────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error(`[ERROR] ${err.message}`);
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ error: 'CORS policy violation' });
+  }
+  res.status(err.status || 500).json({
+    error: isProd ? 'Internal server error' : err.message,
   });
 });
 
-// Root route
-app.get('/', (req, res) => {
-  res.send('Backend for E-commerce API is running');
-});
-
-// Start server
+// ── Start Server ─────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  if (process.env.JWT_SECRET) {
-    console.log('JWT Secret: Using secret from .env file.');
-  } else {
-    console.warn('JWT Secret: Not found in .env. Using fallback or default secret from route modules.');
-  }
+  console.log(`🚀 FeriWala API running on port ${PORT} [${isProd ? 'PRODUCTION' : 'DEVELOPMENT'}]`);
 });

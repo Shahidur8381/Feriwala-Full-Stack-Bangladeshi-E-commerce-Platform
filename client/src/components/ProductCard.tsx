@@ -25,10 +25,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     // Fetch review summary for this product
     const fetchReviewSummary = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/reviews/product/${product.id}/summary`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/product/${product.id}/summary`);
         setReviewSummary({
-          totalReviews: response.data.totalReviews || 0,
-          averageRating: response.data.averageRating || 0
+          totalReviews: Number(response.data.totalReviews) || 0,
+          averageRating: Number(response.data.averageRating) || 0
         });
       } catch (error) {
         console.error('Error fetching review summary:', error);
@@ -85,12 +85,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     : 0;
   
   // Use database rating if available, otherwise fallback to legacy rating
-  const averageRating = reviewSummary.averageRating > 0 ? reviewSummary.averageRating : legacyRating;
-  const totalReviews = reviewSummary.totalReviews;
+  const averageRating = Number(reviewSummary.averageRating) > 0 ? Number(reviewSummary.averageRating) : legacyRating;
+  const totalReviews = Number(reviewSummary.totalReviews);
 
   // Create a valid image URL or use a fallback
   const imageUrl = product.image 
-    ? `http://localhost:5000${product.image}` 
+    ? `${process.env.NEXT_PUBLIC_API_URL}${product.image}` 
     : '/imageWhenNoImage/NoImage.jpg';
 
   // Determine the price to display based on discount validity
@@ -129,51 +129,57 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   return (
     <Link href={`/product/${product.id}`}>
-      <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-        <div className="relative h-48 w-full">
+      <div className="fw-card group cursor-pointer h-full flex flex-col">
+        <div className="relative h-48 w-full overflow-hidden">
           <Image 
             src={imageUrl} 
             alt={product.title}
             fill={true}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
             style={{ objectFit: 'cover' }}
+            className="group-hover:scale-105 transition-transform duration-500"
             priority={false}
           />
           {product.discount > 0 && isDiscountValid && (
-            <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs">
-              {product.discount}% OFF
+            <div className="fw-badge-discount">
+              -{product.discount}%
             </div>
           )}
         </div>
         
-        <div className="p-4">
-          <h3 className="text-lg font-semibold truncate">{product.title}</h3>
+        <div className="p-3 flex-1 flex flex-col">
+          <h3 className="text-sm font-semibold truncate text-gray-800 group-hover:text-green-700 transition-colors">{product.title}</h3>
           
           <div className="flex justify-between items-center mt-2">
             <div>
               {product.discount > 0 && isDiscountValid ? (
                 <>
-                  <span className="text-gray-500 line-through mr-2">${product.price}</span>
-                  <span className="text-blue-600 font-bold">${product.final_price}</span>
+                  <span className="fw-price-old text-xs mr-1">৳{product.price}</span>
+                  <span className="fw-price text-base">৳{product.final_price}</span>
                 </>
               ) : (
-                <span className="text-blue-600 font-bold">${product.price}</span>
+                <span className="fw-price text-base">৳{product.price}</span>
               )}
             </div>
-              <div className="flex items-center">
-              <span className="text-yellow-500 mr-1">★</span>
-              <span className="text-sm">{averageRating.toFixed(1)}</span>
-              <span className="text-gray-400 text-xs ml-1">({totalReviews})</span>
+            <div className="flex items-center gap-0.5">
+              <span className="text-yellow-500 text-xs">★</span>
+              <span className="text-xs font-medium">{averageRating.toFixed(1)}</span>
+              <span className="text-gray-400 text-[10px]">({totalReviews})</span>
             </div>
           </div>
-            <p className="text-sm text-gray-500 mt-2 truncate">{product.shopname}</p>          <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+
+          <p className="text-xs text-gray-400 mt-1.5 truncate">{product.shopname}</p>
+          
+          <div className="flex justify-between items-center mt-auto pt-2 text-[10px] text-gray-400">
             <span>{formatSold(product.sold)}</span>
-            <span>{product.stock} in stock</span>
+            <span className={`font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+              {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+            </span>
           </div>
           
           {product.discount > 0 && isDiscountValid && (
-            <p className="text-xs text-red-600 mt-1">
-              Offer ends in {formatRemainingTime()}
+            <p className="text-[10px] text-red-500 mt-1 font-medium">
+              ⏰ {formatRemainingTime()}
             </p>
           )}
         </div>

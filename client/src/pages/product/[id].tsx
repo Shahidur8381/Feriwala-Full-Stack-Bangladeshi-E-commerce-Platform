@@ -6,7 +6,7 @@ import axios from 'axios';
 import { Product } from '../../services/api';
 import Link from 'next/link';
 import { useCart } from '../../contexts/CartContext';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '../../contexts/AuthContext';
 import { FaStar } from 'react-icons/fa';
 import { formatSold } from '../../utils/formatSold';
 
@@ -85,7 +85,7 @@ const ProductDetailsPage: React.FC = () => {
   const refreshProductData = async () => {
     if (id) {
       try {
-        const response = await axios.get(`http://localhost:5000/api/products/${id}`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${id}`);
         setProduct(response.data);
       } catch (error) {
         console.error('Error refreshing product data:', error);
@@ -97,13 +97,13 @@ const ProductDetailsPage: React.FC = () => {
     if (id) {
       const fetchProduct = async () => {
         try {
-          const response = await axios.get(`http://localhost:5000/api/products/${id}`);
+          const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${id}`);
           setProduct(response.data);
           
           // Fetch reviews and review summary
           const [reviewsResponse, summaryResponse] = await Promise.all([
-            axios.get(`http://localhost:5000/api/reviews/product/${id}`),
-            axios.get(`http://localhost:5000/api/reviews/product/${id}/summary`)
+            axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/product/${id}`),
+            axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/product/${id}/summary`)
           ]);
           
           setReviews(reviewsResponse.data);
@@ -168,14 +168,14 @@ const ProductDetailsPage: React.FC = () => {
         try {
           // Check if user can review
           const canReviewResponse = await axios.get(
-            `http://localhost:5000/api/reviews/can-review/${id}/${userEmail}`
+            `${process.env.NEXT_PUBLIC_API_URL}/api/reviews/can-review/${id}/${userEmail}`
           );
           setCanReview(canReviewResponse.data);
 
           // If user has reviewed, fetch existing review
           if (canReviewResponse.data.hasReviewed) {
             const existingReviewResponse = await axios.get(
-              `http://localhost:5000/api/reviews/user/${userEmail}/product/${id}`
+              `${process.env.NEXT_PUBLIC_API_URL}/api/reviews/user/${userEmail}/product/${id}`
             );
             if (existingReviewResponse.data) {
               setExistingReview(existingReviewResponse.data);
@@ -303,7 +303,7 @@ const ProductDetailsPage: React.FC = () => {
       
       if (isEditingReview && existingReview) {
         // Update existing review
-        response = await fetch(`http://localhost:5000/api/reviews/${existingReview.id}`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/${existingReview.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -311,12 +311,12 @@ const ProductDetailsPage: React.FC = () => {
           body: JSON.stringify({
             rating: reviewForm.rating,
             comment: reviewForm.comment,
-            customerEmail: user?.emailAddresses[0]?.emailAddress
+            customerEmail: user?.emailAddresses?.[0]?.emailAddress
           }),
         });      } else {
         // Submit new review - need to find an order ID for this product
         try {
-          const ordersResponse = await fetch(`http://localhost:5000/api/orders/user/${user?.emailAddresses[0]?.emailAddress}`);
+          const ordersResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/user/${user?.emailAddresses?.[0]?.emailAddress}`);
           
           if (!ordersResponse.ok) {
             throw new Error(`Failed to fetch orders: ${ordersResponse.status} ${ordersResponse.statusText}`);
@@ -338,7 +338,7 @@ const ProductDetailsPage: React.FC = () => {
             return;
           }
 
-          response = await fetch('http://localhost:5000/api/reviews', {
+          response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -348,7 +348,7 @@ const ProductDetailsPage: React.FC = () => {
               rating: reviewForm.rating,
               comment: reviewForm.comment,
               orderId: orderId,
-              customerEmail: user?.emailAddresses[0]?.emailAddress
+              customerEmail: user?.emailAddresses?.[0]?.emailAddress
             }),
           });
         } catch (ordersError) {
@@ -363,8 +363,8 @@ const ProductDetailsPage: React.FC = () => {
         
         // Refresh reviews and summary
         const [reviewsResponse, summaryResponse] = await Promise.all([
-          axios.get(`http://localhost:5000/api/reviews/product/${id}`),
-          axios.get(`http://localhost:5000/api/reviews/product/${id}/summary`)
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/product/${id}`),
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/product/${id}/summary`)
         ]);
         
         setReviews(reviewsResponse.data);
@@ -381,7 +381,7 @@ const ProductDetailsPage: React.FC = () => {
         // Fetch updated existing review
         if (!isEditingReview) {
           const newReviewResponse = await axios.get(
-            `http://localhost:5000/api/reviews/user/${user?.emailAddresses[0]?.emailAddress}/product/${id}`
+            `${process.env.NEXT_PUBLIC_API_URL}/api/reviews/user/${user?.emailAddresses?.[0]?.emailAddress}/product/${id}`
           );
           if (newReviewResponse.data) {
             setExistingReview(newReviewResponse.data);
@@ -498,7 +498,7 @@ const ProductDetailsPage: React.FC = () => {
           <div className="relative h-96 rounded-lg overflow-hidden">
             <Image 
               src={product.image 
-                ? `http://localhost:5000${product.image}` 
+                ? `${process.env.NEXT_PUBLIC_API_URL}${product.image}` 
                 : '/imageWhenNoImage/NoImage.jpg'} 
               alt={product.title}
               fill={true}
@@ -509,71 +509,90 @@ const ProductDetailsPage: React.FC = () => {
           </div>
 
           {/* Product Details */}
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
+          <div className="animate-fade-in-up delay-1">
+            <h1 className="text-3xl font-bold mb-2 text-gray-800">{product.title}</h1>
               <div className="flex items-center mb-4">
               <div className="flex items-center mr-4">
                 <span className="text-yellow-500 mr-1">★</span>
                 <span className="text-lg font-semibold">{averageRating.toFixed(1)}</span>
               </div>
-              <span className="text-gray-500">({reviewSummary.totalReviews} reviews)</span>
+              <span className="text-gray-500 text-sm">({reviewSummary.totalReviews} reviews)</span>
             </div>
 
             {/* Category and Brand - New Section */}
-            <div className="mb-4 flex flex-wrap gap-2">
-              <Link href={`/search?category=${encodeURIComponent(product.category)}`} className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm">
-                Category: {product.category}
+            <div className="mb-6 flex flex-wrap gap-2">
+              <Link href={`/search?category=${encodeURIComponent(product.category)}`} className="bg-green-50 hover:bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-sm font-medium transition-colors border border-green-200">
+                🏷️ {product.category}
               </Link>
-              <Link href={`/search?brand=${encodeURIComponent(product.brand)}`} className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm">
-                Brand: {product.brand}
+              <Link href={`/search?brand=${encodeURIComponent(product.brand)}`} className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm font-medium transition-colors border border-blue-200">
+                🏢 {product.brand}
               </Link>
             </div>
 
-            <div className="mb-6">
+            <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
               {product.discount > 0 && isDiscountValid ? (
                 <div>
-                  <span className="text-gray-500 line-through mr-2">${product.price}</span>
-                  <span className="text-2xl font-bold text-blue-600">${product.final_price}</span>
-                  <span className="ml-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs">
-                    {product.discount}% OFF
-                  </span>
+                  <div className="flex items-baseline gap-3">
+                    <span className="fw-price text-3xl">৳{product.final_price}</span>
+                    <span className="fw-price-old text-lg">৳{product.price}</span>
+                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                      -{product.discount}%
+                    </span>
+                  </div>
                   {isDiscountValid && (
-                    <div className="mt-2 text-sm text-red-600">
-                      Offer ends in {formatRemainingTime()}
+                    <div className="mt-2 text-sm text-red-600 font-medium flex items-center gap-1">
+                      <span>⏰</span> Offer ends in {formatRemainingTime()}
                     </div>
                   )}
                 </div>
               ) : (
-                <span className="text-2xl font-bold text-blue-600">${product.price}</span>
+                <span className="fw-price text-3xl">৳{product.price}</span>
               )}
             </div>
 
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">Description</h3>
-              <p className="text-gray-700">{product.description}</p>
-            </div>            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">Shop Information</h3>
-              <Link href={`/shop/${product.seller_id}`} className="text-blue-600 hover:underline">
-                <p className="font-medium">{shopname || 'Shop Name'}</p>
-              </Link>
-              <p className="text-gray-700">{shopdetails || 'Shop Details'}</p>
-            </div>
-
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">Product Stats</h3>
-              <div className="flex space-x-6 text-sm text-gray-600">
-                <div>
-                  <span className="font-medium">Stock:</span> {product.stock} available
-                </div>                <div>
-                  <span className="font-medium">Sold:</span> {formatSold(product.sold)}
-                </div>
+            <div className="mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+              <h3 className="text-lg font-bold mb-2 text-gray-800 border-b pb-2">Description</h3>
+              <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">{product.description}</p>
+            </div>            <div className="mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-700 text-xl">
+                🏪
+              </div>
+              <div>
+                <h3 className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Sold By</h3>
+                <Link href={`/shop/${product.seller_id}`} className="text-green-700 hover:text-green-800 font-bold transition-colors">
+                  {shopname || 'Shop Name'}
+                </Link>
+                <p className="text-xs text-gray-500 line-clamp-1">{shopdetails || 'Shop Details'}</p>
               </div>
             </div>
 
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">Delivery Information</h3>
-              <p>Inside City: ${product.deliverycharge_inside}</p>
-              <p>Outside City: ${product.deliverycharge_outside}</p>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <h3 className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Product Stats</h3>
+                <div className="space-y-1 text-sm text-gray-700 font-medium">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Stock:</span> 
+                    <span className={product.stock > 0 ? "text-green-600" : "text-red-500"}>{product.stock > 0 ? `${product.stock} left` : 'Out of stock'}</span>
+                  </div>                <div className="flex justify-between">
+                    <span className="text-gray-500">Sold:</span> 
+                    <span>{formatSold(product.sold)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <h3 className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Delivery Charge</h3>
+                <div className="space-y-1 text-sm text-gray-700 font-medium">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Inside City:</span> 
+                    <span>৳{product.deliverycharge_inside}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Outside City:</span> 
+                    <span>৳{product.deliverycharge_outside}</span>
+                  </div>
+                </div>
+              </div>
             </div>            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
               <div className="flex items-center">

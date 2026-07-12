@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '../contexts/AuthContext';
 
 interface ReviewFormProps {
   orderId: string;
@@ -33,7 +33,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('http://localhost:5000/api/reviews', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

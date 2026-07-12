@@ -51,7 +51,9 @@ export default function createProductRoutes(db, upload) {
       deliverycharge_inside, deliverycharge_outside
     } = req.body;
 
-    const { shopName, shopDetails = null, id: sellerId } = req.seller;
+    const shopName = req.seller.shopName || req.seller.shopname || 'Default Shop';
+    const shopDetails = req.seller.shopDetails || req.seller.shopdetails || null;
+    const sellerId = req.seller.id;
     const image = req.file ? `/uploads/${req.file.filename}` : null;
 
     // Validate essential fields
@@ -61,6 +63,9 @@ export default function createProductRoutes(db, upload) {
 
     const numericPrice = parseFloat(price);
     const numericDiscount = parseFloat(discount || 0);
+    const numericStock = parseInt(stock) || 0;
+    const numericInside = parseFloat(deliverycharge_inside) || 0;
+    const numericOutside = parseFloat(deliverycharge_outside) || 0;
     const final_price = numericPrice - (numericPrice * (numericDiscount / 100));
 
     const sql = `
@@ -69,12 +74,12 @@ export default function createProductRoutes(db, upload) {
         category, brand, stock, deliverycharge_inside, deliverycharge_outside,
         sold, rating, total_rating, reviews,
         shopname, shopdetails, tags, image, seller_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', '{}', '{}', '{}', ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '0', '{}', '0', '[]', ?, ?, ?, ?, ?)
     `;
 
     const params = [
       title, description, numericPrice, numericDiscount, discount_validity, final_price,
-      category, brand, stock, deliverycharge_inside, deliverycharge_outside,
+      category, brand, numericStock, numericInside, numericOutside,
       shopName, shopDetails, tags, image, sellerId
     ];
 
@@ -121,15 +126,15 @@ export default function createProductRoutes(db, upload) {
     if (description !== undefined) { updates.push('description = ?'); params.push(description); }
     if (category !== undefined) { updates.push('category = ?'); params.push(category); }
     if (brand !== undefined) { updates.push('brand = ?'); params.push(brand); }
-    if (stock !== undefined) { updates.push('stock = ?'); params.push(parseInt(stock)); }
+    if (stock !== undefined) { updates.push('stock = ?'); params.push(parseInt(stock) || 0); }
     if (tags !== undefined) { updates.push('tags = ?'); params.push(tags); }
     if (deliverycharge_inside !== undefined) { 
       updates.push('deliverycharge_inside = ?'); 
-      params.push(parseFloat(deliverycharge_inside)); 
+      params.push(parseFloat(deliverycharge_inside) || 0); 
     }
     if (deliverycharge_outside !== undefined) { 
       updates.push('deliverycharge_outside = ?'); 
-      params.push(parseFloat(deliverycharge_outside)); 
+      params.push(parseFloat(deliverycharge_outside) || 0); 
     }
     if (discount_validity !== undefined) { 
       updates.push('discount_validity = ?'); 

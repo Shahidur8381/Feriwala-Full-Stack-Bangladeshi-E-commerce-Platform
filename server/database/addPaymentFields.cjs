@@ -17,7 +17,7 @@ function addPaymentFields() {
 
     // Add payment method column
     db.run(`ALTER TABLE orders ADD COLUMN paymentMethod TEXT`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+      if (err && !err.message.includes('duplicate column name') && !err.message.includes('already exists')) {
         console.error('Error adding paymentMethod column:', err.message);
       } else {
         console.log('✓ Added paymentMethod column');
@@ -26,7 +26,7 @@ function addPaymentFields() {
 
     // Add mobile/account number column
     db.run(`ALTER TABLE orders ADD COLUMN paymentAccount TEXT`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+      if (err && !err.message.includes('duplicate column name') && !err.message.includes('already exists')) {
         console.error('Error adding paymentAccount column:', err.message);
       } else {
         console.log('✓ Added paymentAccount column');
@@ -35,7 +35,7 @@ function addPaymentFields() {
 
     // Add transaction ID column
     db.run(`ALTER TABLE orders ADD COLUMN transactionId TEXT`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+      if (err && !err.message.includes('duplicate column name') && !err.message.includes('already exists')) {
         console.error('Error adding transactionId column:', err.message);
       } else {
         console.log('✓ Added transactionId column');
@@ -44,7 +44,7 @@ function addPaymentFields() {
 
     // Add payment status column (for tracking payment verification)
     db.run(`ALTER TABLE orders ADD COLUMN paymentStatus TEXT DEFAULT 'pending'`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
+      if (err && !err.message.includes('duplicate column name') && !err.message.includes('already exists')) {
         console.error('Error adding paymentStatus column:', err.message);
       } else {
         console.log('✓ Added paymentStatus column');

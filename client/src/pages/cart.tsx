@@ -1,7 +1,7 @@
 import React from 'react';
 import Layout from '../components/Layout';
 import { useCart } from '../contexts/CartContext';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -109,7 +109,7 @@ const CartPage: React.FC = () => {
                             <div className="h-16 w-16 relative flex-shrink-0">
                               <Image 
                                 src={item.image 
-                                  ? `http://localhost:5000${item.image}` 
+                                  ? `${process.env.NEXT_PUBLIC_API_URL}${item.image}` 
                                   : '/imageWhenNoImage/NoImage.jpg'} 
                                 alt={item.title}
                                 fill={true}

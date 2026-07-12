@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from './AuthContext';
 import { useRouter } from 'next/router';
 import { Product } from '../services/api';
 
@@ -126,7 +126,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     try {
       // Fetch current product data to check stock
       const productIds = cartItems.map(item => item.id);
-      const response = await fetch('http://localhost:5000/api/products');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`);
       const products: Product[] = await response.json();
       
       let hasStockIssues = false;

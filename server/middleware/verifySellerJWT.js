@@ -1,9 +1,15 @@
-import jwt from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
+import db from '../database/supabaseDb.js';
 
-export default function verifySellerJWT(req, res, next) {
-  console.log('Running JWT verification middleware');
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
+
+export default async function verifySellerJWT(req, res, next) {
+  console.log('Running Supabase Auth verification middleware');
   
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers.authorization || req.headers.Authorization;
   if (!authHeader) {
     console.log('No authorization header found');
     return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
@@ -16,19 +22,36 @@ export default function verifySellerJWT(req, res, next) {
   }
 
   try {
-    // Use environment variable for secret or fallback to a default
-    const secretKey = process.env.JWT_SECRET || 'your-secret-key';
-    const decoded = jwt.verify(token, secretKey);
+    // Let Supabase API securely verify the token
+    const { data: { user }, error } = await supabase.auth.getUser(token);
     
-    console.log('Token successfully verified:', decoded);
+    if (error || !user) {
+      console.error('Supabase Auth verification error:', error?.message);
+      return res.status(401).json({ success: false, message: 'Invalid or expired token.' });
+    }
     
-    // Store seller info in both formats for compatibility
-    req.seller = decoded;
-    req.user = decoded;
+    console.log('Token successfully verified for auth_id:', user.id);
     
-    next();
+    // Find the local seller profile using the Supabase auth_id
+    db.get('SELECT * FROM sellers WHERE auth_id = ? OR email = ?', [user.id, user.email], (err, seller) => {
+      if (err) {
+        console.error('Error fetching seller by auth_id:', err);
+        return res.status(500).json({ success: false, message: 'Database error.' });
+      }
+
+      if (seller) {
+        req.seller = seller;
+        req.user = seller; // For compatibility
+      } else {
+        // If no seller profile exists yet, just attach the user data.
+        // The profile creation endpoint will handle inserting the new seller.
+        req.seller = { auth_id: user.id, email: user.email };
+        req.user = req.seller;
+      }
+      next();
+    });
   } catch (error) {
-    console.error('JWT verification error:', error);
-    return res.status(400).json({ success: false, message: 'Invalid token.' });
+    console.error('Internal auth error:', error.message);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 }

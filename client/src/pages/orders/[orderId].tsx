@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '../../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import { FaStar, FaStarHalfAlt, FaRegStar } from 'react-icons/fa';
@@ -68,7 +68,7 @@ const OrderDetailsPage: React.FC = () => {
   }, [orderId]);
   const fetchOrder = async (orderIdParam: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderIdParam}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderIdParam}`);
       if (response.ok) {
         const orderData = await response.json();        setOrder(orderData);
 
@@ -76,7 +76,7 @@ const OrderDetailsPage: React.FC = () => {
         if (user?.emailAddresses?.[0]?.emailAddress) {
           const reviewPromises = orderData.items.map(async (item: OrderItem) => {
             try {
-              const reviewResponse = await fetch(`http://localhost:5000/api/reviews/user/${user.emailAddresses[0].emailAddress}/product/${item.productId}`);
+              const reviewResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/user/${user?.emailAddresses?.[0]?.emailAddress}/product/${item.productId}`);
               if (reviewResponse.ok) {
                 const reviewData = await reviewResponse.json();
                 return { productId: item.productId, review: reviewData };
@@ -133,19 +133,19 @@ const OrderDetailsPage: React.FC = () => {
       
       if (existingReview) {
         // Update existing review
-        response = await fetch(`http://localhost:5000/api/reviews/${existingReview.id}`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/${existingReview.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },          body: JSON.stringify({
             rating: review.rating,
             comment: review.comment || '', // Allow empty comment
-            customerEmail: user?.emailAddresses[0]?.emailAddress
+            customerEmail: user?.emailAddresses?.[0]?.emailAddress
           }),
         });
       } else {
         // Create new review
-        response = await fetch('http://localhost:5000/api/reviews', {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ const OrderDetailsPage: React.FC = () => {
             rating: review.rating,
             comment: review.comment || '', // Allow empty comment
             orderId: order?.orderId,
-            customerEmail: user?.emailAddresses[0]?.emailAddress
+            customerEmail: user?.emailAddresses?.[0]?.emailAddress
           }),
         });
       }
@@ -175,7 +175,7 @@ const OrderDetailsPage: React.FC = () => {
           }));
         } else {
           // For new review, refetch the review data
-          const newReviewResponse = await fetch(`http://localhost:5000/api/reviews/user/${user?.emailAddresses[0]?.emailAddress}/product/${productId}`);
+          const newReviewResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/user/${user?.emailAddresses?.[0]?.emailAddress}/product/${productId}`);
           if (newReviewResponse.ok) {
             const newReviewData = await newReviewResponse.json();
             if (newReviewData) {
@@ -375,7 +375,7 @@ const OrderDetailsPage: React.FC = () => {
                     <div className="h-16 w-16 relative flex-shrink-0">
                       <Image 
                         src={item.image 
-                          ? `http://localhost:5000${item.image}` 
+                          ? `${process.env.NEXT_PUBLIC_API_URL}${item.image}` 
                           : '/imageWhenNoImage/NoImage.jpg'} 
                         alt={item.title}
                         fill={true}

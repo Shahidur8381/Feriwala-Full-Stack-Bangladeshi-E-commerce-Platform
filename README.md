@@ -1,213 +1,109 @@
-# 🛍️ FeriWala - E-commerce Platform
+<div align="center">
+  
+  <h1>🛍️ FeriWala (ফেরিওয়ালা)</h1>
+  <p><strong>A Full-Stack, Multi-Vendor E-Commerce Platform built for the Bangladeshi Market</strong></p>
 
-A full-stack Bangladeshi e-commerce platform built with Next.js, React, Node.js, and SQLite.
+  <!-- Tech Stack Badges -->
+  <img src="https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express" />
+  <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Supabase-181818?style=for-the-badge&logo=supabase&logoColor=3ECF8E" alt="Supabase" />
+</div>
 
-FeriWala includes customer shopping features, seller management, and admin controls in a single platform.
+<br />
 
----
+## 📖 Overview
 
-## 🚀 Features
+FeriWala is a comprehensive, production-ready e-commerce solution designed to handle complex multi-vendor relationships. Built as a **monorepo containing four independent applications**, it demonstrates an advanced understanding of modern web architecture, secure authentication flows, and real-world payment integrations.
 
-### Customer Features
-- Product search, filtering, and sorting
-- Shopping cart management
-- Order placement and tracking
-- Product reviews and ratings
-- Responsive design
-- Secure authentication
+This project was built to solve the unique challenges of e-commerce in Bangladesh, featuring native support for local payment methods (bKash, Nagad), Bengali typography, and localized delivery logistics.
 
-### Seller Features
-- Product management
-- Inventory tracking
-- Order processing
-- Sales overview dashboard
+## ✨ Why This Project Stands Out
 
-### Admin Features
-- User management
-- Order management
-- Payment status control
-- Role-based access system
-
----
-
-## 🛠️ Tech Stack
-
-| Category | Technology |
-|---|---|
-| Frontend | Next.js, React, TypeScript |
-| Backend | Node.js, Express.js |
-| Database | SQLite |
-| Authentication | Clerk, JWT |
-| Styling | TailwindCSS, Chakra UI |
-| File Upload | Multer |
+- **Complex Monorepo Architecture**: Manages a scalable Node.js/Express backend communicating with three separate React-based frontends (Customer, Seller, and Master Admin).
+- **Real-World Payment Integration**: Successfully implements the **SSLCommerz** payment gateway API with secure webhook fallbacks and database transaction mapping.
+- **Enterprise-Grade Security**: Features Helmet-hardened HTTP headers, strict CORS whitelisting, and stateless JWT authentication via Supabase Auth.
+- **Optimized Data Layer**: Uses parameterized PostgreSQL queries with pg.Pool to prevent SQL injection and ensure high performance under load.
+- **Premium UI/UX**: Custom design system built with Tailwind CSS, featuring staggered micro-animations, glassmorphism, and fully responsive layouts.
 
 ---
 
-## 📁 Project Structure
+## 🏗️ System Architecture
 
-```bash
-FeriWala/
-├── client/          # Customer frontend
-├── admin/           # Seller dashboard
-├── seller_admin/    # Admin token generator
-├── server/          # Backend API
-├── logs/            # Application logs
-└── Database/        # SQLite database
+The platform follows a decoupled architecture, allowing individual services to scale independently.
+
+```mermaid
+graph TD
+    Client[Customer Portal <br/> Next.js / Tailwind] -->|REST API| Server[Node.js / Express Server]
+    SellerPanel[Seller Dashboard <br/> Vite / React] -->|REST API| Server
+    AdminPanel[Master Admin Tool <br/> Vite / React] -->|REST API| Server
+    
+    Server -->|pg.Pool Queries| DB[(Supabase PostgreSQL)]
+    Server -->|SSL Verification| SSLCommerz[SSLCommerz API]
+    
+    Client -->|JWT Auth| SupabaseAuth[Supabase Auth]
+    SellerPanel -->|JWT Auth| SupabaseAuth
 ```
 
+### 📁 Monorepo Structure
+
+- `/client` **(Next.js)**: Server-side rendered storefront optimized for SEO and core web vitals.
+- `/server` **(Node.js/Express)**: Robust REST API handling business logic, payment verification, and database interactions.
+- `/seller` **(Vite/React)**: Client-side rendered dashboard for vendors to manage inventory, process orders, and view analytics.
+- `/seller_admin` **(Vite/React)**: Internal admin tool for generating secure vendor registration tokens.
+
 ---
 
-## ⚙️ Installation
+## 🚀 Deployment & Infrastructure
+
+The application is fully containerized/configured for modern cloud hosting:
+
+- **Backend (API)**: Deployed on **Railway** for long-running Node.js processes.
+- **Frontends (UI)**: Deployed globally on the **Vercel** Edge Network with custom SPA rewrite rules (`vercel.json`).
+- **Database**: Hosted on **Supabase** (PostgreSQL).
+
+<details>
+<summary><b>Click to view local development setup</b></summary>
 
 ### Prerequisites
-- Node.js 18+
-- npm or yarn
+- Node.js >= 18
+- A Supabase project (for DB and Auth)
 
-### Clone the Repository
+### Setup
+1. Clone the repository.
+2. In all 4 directories (`server`, `client`, `seller`, `seller_admin`), copy the `.env.example` file to `.env` (or `.env.local` for Next.js) and fill in your Supabase credentials.
+3. Install dependencies and start development servers:
 
-```bash
-git clone https://github.com/Shahidur8381/Feriwala-Full-Stack-Bangladeshi-E-commerce-Platform.git
-cd Feriwala-Full-Stack-Bangladeshi-E-commerce-Platform
-```
-
----
-
-## 📦 Install Dependencies
-
-### Root
-```bash
-npm install
-```
-
-### Client
-```bash
-cd client
-npm install
-```
-
-### Server
-```bash
-cd ../server
-npm install
-```
-
-### Admin Dashboard
-```bash
-cd ../admin
-npm install
-```
-
----
-
-## 🔑 Environment Variables
-
-### Client (`client/.env.local`)
-
-```env
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_key
-CLERK_SECRET_KEY=your_secret
-```
-
-### Server (`server/.env`)
-
-```env
-JWT_SECRET=your_jwt_secret
-DB_PATH=./ecommerce.db
-PORT=5000
-```
-
----
-
-## ▶️ Run the Project
-
-### Backend
+**Terminal 1 (Backend)**
 ```bash
 cd server
-npm run dev
+npm install
+npm run dev # Runs on http://localhost:5000
 ```
 
-### Frontend
+**Terminal 2 (Customer Frontend)**
 ```bash
 cd client
-npm run dev
+npm install
+npm run dev # Runs on http://localhost:3000
 ```
 
-### Admin Dashboard
+**Terminal 3 (Seller Dashboard)**
 ```bash
-cd admin
-npm run dev
+cd seller
+npm install
+npm run dev # Runs on http://localhost:5173
 ```
+</details>
 
 ---
 
-## 🌐 Local Development URLs
+## 🛡️ Security Highlights
 
-| Service | URL |
-|---|---|
-| Frontend | http://localhost:3001 |
-| Admin Dashboard | http://localhost:5173 |
-| Backend API | http://localhost:5000 |
-
----
-
-## 💳 Supported Payment Methods
-
-- bKash
-- Nagad
-- Rocket
-- Upay
-- Visa
-- MasterCard
-- Bank Transfer
-
----
-
-## 📦 API Overview
-
-### Authentication
-```http
-POST /api/sellers/register
-POST /api/sellers/login
-GET  /api/sellers/profile
-```
-
-### Products
-```http
-GET    /api/products
-GET    /api/products/:id
-POST   /api/products
-PUT    /api/products/:id
-DELETE /api/products/:id
-```
-
-### Orders
-```http
-POST   /api/orders
-GET    /api/orders/:id
-PATCH  /api/admin/orders/:id/status
-```
-
----
-
-## 🗺️ Future Improvements
-
-- Mobile app support
-- Real-time notifications
-- Advanced analytics
-- Multi-language support
-- AI-based recommendations
-
----
-
-## 👨‍💻 Author
-
-Built and maintained by **Shawon**.
-
-- GitHub: https://github.com/Shahidur8381
-- Portfolio: https://shahidur.me
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
+- **Parameterized Queries**: All SQL interactions use prepared statements to completely mitigate SQL injection vectors.
+- **CORS Protection**: The backend enforces a strict whitelist of allowed frontend origins via environment variables.
+- **JWT Verification**: Custom Express middleware validates Supabase-issued JWTs before allowing access to protected routes.
+- **Payment Verification**: Avoids client-side payment tampering by securely looking up order parameters in the database upon successful gateway redirects (`tran_id` verification).

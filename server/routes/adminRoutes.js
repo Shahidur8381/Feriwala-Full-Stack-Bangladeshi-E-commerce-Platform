@@ -1,91 +1,110 @@
 import express from 'express';
 import verifySellerJWT from '../middleware/verifySellerJWT.js';
 
+// Map PostgreSQL lowercase columns → camelCase for the frontend
+function normalizeOrder(row) {
+  if (!row) return null;
+  return {
+    orderId: row.orderid ?? row.orderId,
+    customerName: row.customername ?? row.customerName,
+    customerPhone: row.customerphone ?? row.customerPhone,
+    customerAddress: row.customeraddress ?? row.customerAddress,
+    customerEmail: row.customeremail ?? row.customerEmail,
+    deliveryLocation: row.deliverylocation ?? row.deliveryLocation,
+    deliveryCharge: row.deliverycharge ?? row.deliveryCharge,
+    paymentMethod: row.paymentmethod ?? row.paymentMethod,
+    paymentAccount: row.paymentaccount ?? row.paymentAccount,
+    transactionId: row.transactionid ?? row.transactionId,
+    paymentStatus: row.paymentstatus ?? row.paymentStatus,
+    total: row.total,
+    status: row.status,
+    createdAt: row.createdat ?? row.createdAt,
+    items: row.items ?? undefined,
+  };
+}
+
 const createAdminRoutes = (db) => {
   const router = express.Router();
+  const pool = db.pool;
 
   // Apply JWT middleware to all admin routes
   router.use(verifySellerJWT);
+
   // Get all orders (admin only)
-  router.get('/orders', (req, res) => {
-    db.all(`
-      SELECT o.*, 
-             GROUP_CONCAT(oi.title || ' (x' || oi.quantity || ')') as items
-      FROM orders o
-      LEFT JOIN order_items oi ON o.orderId = oi.orderId
-      GROUP BY o.orderId
-      ORDER BY o.createdAt DESC
-    `, (err, orders) => {
-      if (err) {
-        console.error('Error fetching orders:', err.message);
-        return res.status(500).json({ error: 'Failed to fetch orders' });
-      }
-      res.json(orders);
-    });
+  router.get('/orders', async (req, res) => {
+    try {
+      const { rows } = await pool.query(`
+        SELECT o.*,
+               STRING_AGG(oi.title || ' (x' || oi.quantity || ')', ', ') as items
+        FROM orders o
+        LEFT JOIN order_items oi ON o.orderid = oi.orderid
+        GROUP BY o.orderid
+        ORDER BY o.createdat DESC
+      `);
+      res.json(rows.map(row => ({ ...normalizeOrder(row), items: row.items ?? null })));
+    } catch (err) {
+      console.error('Error fetching orders:', err.message);
+      res.status(500).json({ error: 'Failed to fetch orders' });
+    }
   });
+
   // Update order status (admin only)
-  router.patch('/orders/:orderId/status', (req, res) => {
+  router.patch('/orders/:orderId/status', async (req, res) => {
     const { orderId } = req.params;
     const { status } = req.body;
 
-    if (!status) {
-      return res.status(400).json({ error: 'Status is required' });
-    }
+    if (!status) return res.status(400).json({ error: 'Status is required' });
 
-    // Validate status
     const validStatuses = ['unpaid', 'pending', 'paid', 'ready_to_ship', 'shipped', 'out_for_delivery', 'delivered'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    db.run(`
-      UPDATE orders SET status = ? WHERE orderId = ?
-    `, [status, orderId], function(err) {
-      if (err) {
-        console.error('Error updating order status:', err.message);
-        return res.status(500).json({ error: 'Failed to update order status' });
-      }
-
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-
+    try {
+      const { rowCount } = await pool.query(
+        'UPDATE orders SET status = $1 WHERE orderid = $2',
+        [status, orderId]
+      );
+      if (rowCount === 0) return res.status(404).json({ error: 'Order not found' });
       res.json({ message: 'Order status updated successfully' });
-    });
+    } catch (err) {
+      console.error('Error updating order status:', err.message);
+      res.status(500).json({ error: 'Failed to update order status' });
+    }
   });
 
   // Get all customers
-  router.get('/customers', (req, res) => {
-    db.all(`
-      SELECT c.*, COUNT(o.orderId) as totalOrders
-      FROM customers c
-      LEFT JOIN orders o ON c.email = o.customerEmail
-      GROUP BY c.id
-      ORDER BY c.createdAt DESC
-    `, (err, customers) => {
-      if (err) {
-        console.error('Error fetching customers:', err.message);
-        return res.status(500).json({ error: 'Failed to fetch customers' });
-      }
-      res.json(customers);
-    });
+  router.get('/customers', async (req, res) => {
+    try {
+      const { rows } = await pool.query(`
+        SELECT c.*, COUNT(o.orderid) as totalorders
+        FROM customers c
+        LEFT JOIN orders o ON c.email = o.customeremail
+        GROUP BY c.id
+        ORDER BY c.createdat DESC
+      `);
+      res.json(rows);
+    } catch (err) {
+      console.error('Error fetching customers:', err.message);
+      res.status(500).json({ error: 'Failed to fetch customers' });
+    }
   });
 
   // Get all reviews
-  router.get('/reviews', (req, res) => {
-    db.all(`
-      SELECT r.*, p.title as productTitle, o.customerName
-      FROM reviews r
-      JOIN products p ON r.productId = p.id
-      JOIN orders o ON r.orderId = o.orderId
-      ORDER BY r.createdAt DESC
-    `, (err, reviews) => {
-      if (err) {
-        console.error('Error fetching reviews:', err.message);
-        return res.status(500).json({ error: 'Failed to fetch reviews' });
-      }
-      res.json(reviews);
-    });
+  router.get('/reviews', async (req, res) => {
+    try {
+      const { rows } = await pool.query(`
+        SELECT r.*, p.title as producttitle, o.customername
+        FROM reviews r
+        JOIN products p ON r.productid = p.id
+        JOIN orders o ON r.orderid = o.orderid
+        ORDER BY r.createdat DESC
+      `);
+      res.json(rows);
+    } catch (err) {
+      console.error('Error fetching reviews:', err.message);
+      res.status(500).json({ error: 'Failed to fetch reviews' });
+    }
   });
 
   return router;

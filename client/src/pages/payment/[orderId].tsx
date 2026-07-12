@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '../../contexts/AuthContext';
 import Layout from '../../components/Layout';
 
 interface PaymentData {
@@ -25,6 +25,7 @@ const PaymentPage: React.FC = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [sslLoading, setSslLoading] = useState(false);
   const [paymentData, setPaymentData] = useState<PaymentData>({
     paymentMethod: '',
     paymentAccount: '',
@@ -47,29 +48,22 @@ const PaymentPage: React.FC = () => {
 
   const fetchOrder = async (orderIdParam: string, email: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderIdParam}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderIdParam}`);
       if (response.ok) {
         const orderData = await response.json();
-        
-        // Verify the order belongs to the current user
         if (orderData.customerEmail !== email) {
           router.push('/profile');
           return;
         }
-        
-        // Check if order is eligible for payment
         if (orderData.status !== 'unpaid') {
           router.push(`/orders/${orderIdParam}`);
           return;
         }
-        
         setOrder(orderData);
       } else {
-        console.error('Failed to fetch order');
         router.push('/profile');
       }
     } catch (error) {
-      console.error('Error fetching order:', error);
       router.push('/profile');
     } finally {
       setLoading(false);
@@ -77,33 +71,48 @@ const PaymentPage: React.FC = () => {
   };
 
   const handleInputChange = (field: keyof PaymentData, value: string) => {
-    setPaymentData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setPaymentData(prev => ({ ...prev, [field]: value }));
   };
 
+  // ── SSLCommerz payment gateway ─────────────────────────────────────────────
+  const handleSSLCommerzPayment = async () => {
+    if (!orderId) return;
+    setSslLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payment/ssl-init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await response.json();
+      if (response.ok && data.url) {
+        // Redirect to SSLCommerz payment page
+        window.location.href = data.url;
+      } else {
+        alert(`Failed to initiate payment gateway: ${data.error || 'Unknown error'}`);
+        setSslLoading(false);
+      }
+    } catch (error) {
+      alert('Failed to connect to payment gateway. Please try again.');
+      setSslLoading(false);
+    }
+  };
+
+  // ── Manual payment submission ──────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!paymentData.paymentMethod || !paymentData.paymentAccount || !paymentData.transactionId) {
       alert('Please fill in all required fields');
       return;
     }
-
     setSubmitting(true);
-    
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/payment`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/payment`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(paymentData),
       });
-
       if (response.ok) {
-        const result = await response.json();
         alert('Payment information submitted successfully! Your order status has been updated to pending.');
         router.push(`/orders/${orderId}`);
       } else {
@@ -111,7 +120,6 @@ const PaymentPage: React.FC = () => {
         alert(`Payment submission failed: ${error.error}`);
       }
     } catch (error) {
-      console.error('Error submitting payment:', error);
       alert('Failed to submit payment information. Please try again.');
     } finally {
       setSubmitting(false);
@@ -132,17 +140,15 @@ const PaymentPage: React.FC = () => {
     );
   }
 
-  if (!isSignedIn || !order) {
-    return null;
-  }
+  if (!isSignedIn || !order) return null;
 
   const paymentMethods = [
-    { value: 'bkash', label: 'bKash', icon: '📱' },
-    { value: 'nagad', label: 'Nagad', icon: '💳' },
-    { value: 'rocket', label: 'Rocket', icon: '🚀' },
-    { value: 'upay', label: 'Upay', icon: '💰' },
-    { value: 'visa', label: 'Visa Card', icon: '💳' },
-    { value: 'mastercard', label: 'Mastercard', icon: '💳' }
+    { value: 'bkash', label: 'bKash', icon: <span className="text-pink-500 font-bold text-lg">bKash</span> },
+    { value: 'nagad', label: 'Nagad', icon: <span className="text-orange-500 font-bold text-lg">Nagad</span> },
+    { value: 'rocket', label: 'Rocket', icon: <span className="text-purple-600 font-bold text-lg">Rocket</span> },
+    { value: 'upay', label: 'Upay', icon: <span className="text-blue-600 font-bold text-lg">Upay</span> },
+    { value: 'visa', label: 'Visa', icon: <span className="text-blue-800 font-bold text-lg italic">VISA</span> },
+    { value: 'mastercard', label: 'Mastercard', icon: <span className="text-red-500 font-bold text-lg">MC</span> }
   ];
 
   return (
@@ -155,20 +161,72 @@ const PaymentPage: React.FC = () => {
             <div className="border-l-4 border-blue-500 pl-4 mb-4">
               <p className="text-sm text-gray-600">Order ID: {order.orderId}</p>
               <p className="text-lg font-semibold">
-                Total Amount: <span className="text-green-600">${order.total.toFixed(2)}</span>
+                Total Amount: <span className="text-green-600">৳{Number(order.total).toFixed(2)}</span>
               </p>
               {order.deliveryCharge > 0 && (
                 <p className="text-sm text-gray-600">
-                  (Including delivery charge: ${order.deliveryCharge.toFixed(2)})
+                  (Including delivery charge: ৳{Number(order.deliveryCharge).toFixed(2)})
                 </p>
               )}
             </div>
           </div>
 
-          {/* Payment Form */}
+          {/* ── SSLCommerz Payment Gateway ── */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6 border-2 border-green-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-xl">🔒</div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">Pay Online (Recommended)</h2>
+                <p className="text-sm text-gray-500">Secure payment via SSLCommerz Gateway</p>
+              </div>
+              <span className="ml-auto bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">SECURE</span>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Pay instantly using your card, mobile banking (bKash, Nagad, Rocket), or net banking.
+              Your order will be confirmed automatically upon successful payment.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-5">
+              {['bKash', 'Nagad', 'Rocket', 'Visa', 'Mastercard', 'DBBL'].map(m => (
+                <span key={m} className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded border">{m}</span>
+              ))}
+            </div>
+            <button
+              id="ssl-pay-btn"
+              onClick={handleSSLCommerzPayment}
+              disabled={sslLoading}
+              className="w-full py-4 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-bold rounded-xl text-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-md"
+            >
+              {sslLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Connecting to Gateway…
+                </>
+              ) : (
+                <>
+                  🔒 Pay ৳{Number(order.total).toFixed(2)} via SSLCommerz
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 border-t border-gray-200" />
+            <span className="text-sm text-gray-400 font-medium">OR PAY MANUALLY</span>
+            <div className="flex-1 border-t border-gray-200" />
+          </div>
+
+          {/* Manual Payment Form */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-6">Payment Information</h2>
-            
+            <h2 className="text-xl font-semibold mb-2">Manual Payment</h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Send money via mobile banking and enter your transaction details below.
+              Your order will remain <strong>pending</strong> until manually verified by our team.
+            </p>
+
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Payment Method */}
               <div>
@@ -194,7 +252,7 @@ const PaymentPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Mobile Number / Account Number */}
+              {/* Account Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {paymentData.paymentMethod === 'visa' || paymentData.paymentMethod === 'mastercard'
@@ -243,7 +301,7 @@ const PaymentPage: React.FC = () => {
                         <p>1. Dial *247# or open bKash app</p>
                         <p>2. Select "Send Money"</p>
                         <p>3. Enter merchant number: 01XXXXXXXXX</p>
-                        <p>4. Enter amount: ${order.total.toFixed(2)}</p>
+                        <p>4. Enter amount: ৳{Number(order.total).toFixed(2)}</p>
                         <p>5. Enter reference: Order-{order.orderId.substring(0, 8)}</p>
                         <p>6. Complete the payment and enter the transaction ID below</p>
                       </div>
@@ -253,7 +311,7 @@ const PaymentPage: React.FC = () => {
                         <p>1. Dial *167# or open Nagad app</p>
                         <p>2. Select "Send Money"</p>
                         <p>3. Enter merchant number: 01XXXXXXXXX</p>
-                        <p>4. Enter amount: ${order.total.toFixed(2)}</p>
+                        <p>4. Enter amount: ৳{Number(order.total).toFixed(2)}</p>
                         <p>5. Complete the payment and enter the transaction ID below</p>
                       </div>
                     )}
@@ -262,14 +320,14 @@ const PaymentPage: React.FC = () => {
                         <p>1. Open your {paymentData.paymentMethod} app</p>
                         <p>2. Select "Send Money"</p>
                         <p>3. Enter merchant number: 01XXXXXXXXX</p>
-                        <p>4. Enter amount: ${order.total.toFixed(2)}</p>
+                        <p>4. Enter amount: ৳{Number(order.total).toFixed(2)}</p>
                         <p>5. Complete the payment and enter the transaction ID below</p>
                       </div>
                     )}
                     {(paymentData.paymentMethod === 'visa' || paymentData.paymentMethod === 'mastercard') && (
                       <div>
                         <p>1. Use your card for online payment</p>
-                        <p>2. Amount: ${order.total.toFixed(2)}</p>
+                        <p>2. Amount: ৳{Number(order.total).toFixed(2)}</p>
                         <p>3. After successful payment, enter the transaction reference number</p>
                       </div>
                     )}
@@ -277,7 +335,7 @@ const PaymentPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Submit Button */}
+              {/* Submit */}
               <div className="flex space-x-4">
                 <button
                   type="button"

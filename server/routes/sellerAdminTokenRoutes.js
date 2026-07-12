@@ -8,7 +8,7 @@ router.get('/token', (req, res) => {
   const db = req.db;
   
   db.get(
-    'SELECT * FROM seller_admin_token_store WHERE is_active = 1 ORDER BY created_at DESC LIMIT 1',
+    'SELECT * FROM seller_admin_token_store WHERE is_active = true ORDER BY created_at DESC LIMIT 1',
     (err, row) => {
       if (err) {
         logger.error('Error fetching active token:', err);
@@ -30,7 +30,7 @@ router.post('/token', (req, res) => {
   }
   
   // Deactivate all previous tokens
-  db.run('UPDATE seller_admin_token_store SET is_active = 0', (err) => {
+  db.run('UPDATE seller_admin_token_store SET is_active = false', (err) => {
     if (err) {
       logger.error('Error deactivating previous tokens:', err);
       return res.status(500).json({ error: 'Internal server error' });
@@ -38,7 +38,7 @@ router.post('/token', (req, res) => {
     
     // Insert new active token
     db.run(
-      'INSERT INTO seller_admin_token_store (token, is_active) VALUES (?, 1)',
+      'INSERT INTO seller_admin_token_store (token, is_active) VALUES (?, true)',
       [token],
       function(err) {
         if (err) {
@@ -84,7 +84,7 @@ router.post('/verify-token', (req, res) => {
   }
   
   db.get(
-    'SELECT * FROM seller_admin_token_store WHERE token = ? AND is_active = 1',
+    'SELECT * FROM seller_admin_token_store WHERE token = ? AND is_active = true',
     [token],
     (err, row) => {
       if (err) {

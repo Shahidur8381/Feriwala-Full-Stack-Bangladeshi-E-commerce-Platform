@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { useCart } from '../contexts/CartContext';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 
@@ -127,7 +127,7 @@ const CheckoutPage: React.FC = () => {
         total: totalWithDelivery
       };
 
-      const response = await fetch('http://localhost:5000/api/orders', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -288,7 +288,7 @@ const CheckoutPage: React.FC = () => {
                     <div className="h-16 w-16 relative flex-shrink-0">
                       <Image 
                         src={item.image 
-                          ? `http://localhost:5000${item.image}` 
+                          ? `${process.env.NEXT_PUBLIC_API_URL}${item.image}` 
                           : '/imageWhenNoImage/NoImage.jpg'} 
                         alt={item.title}
                         fill={true}

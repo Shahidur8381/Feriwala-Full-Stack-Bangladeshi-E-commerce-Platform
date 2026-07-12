@@ -16,5 +16,5 @@ export const getImageUrl = (imagePath: string | null | undefined, fallbackSize: 
   
   // Ensure the path starts with a slash
   const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  return `http://localhost:5000${path}`;
+  return `${process.env.NEXT_PUBLIC_API_URL}${path}`;
 };
