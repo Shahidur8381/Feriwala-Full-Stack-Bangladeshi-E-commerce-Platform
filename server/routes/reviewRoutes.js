@@ -219,7 +219,6 @@ async function updateProductRating(productId, pool) {
       `UPDATE products SET rating = $1, total_rating = $2 WHERE id = $3`,
       [parseFloat(averageRating).toFixed(1), totalReviews, productId]
     );
-    `);
   } catch (err) {
     console.error('Error updating product rating:', err.message);
   }
