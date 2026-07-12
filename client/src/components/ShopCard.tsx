@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { formatShopDetails } from '../utils/shopUtils';
 import { Seller } from '../services/api';
 
 interface ShopCardProps {
@@ -11,7 +12,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ seller }) => {
     <Link href={`/shop/${seller.id}`}>
       <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
         <h3 className="text-xl font-semibold text-center mb-2">{seller.shopName}</h3>
-        <p className="text-gray-600 text-center mb-4 truncate">{seller.shopDetails}</p>
+        <p className="text-gray-600 text-center mb-4 truncate">{formatShopDetails(seller.shopDetails)}</p>
           {/* Rating and sold information - always shown */}
         <div className="text-center mb-2">
           <div className="flex items-center justify-center mb-1">

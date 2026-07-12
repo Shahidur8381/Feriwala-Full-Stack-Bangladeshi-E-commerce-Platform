@@ -259,7 +259,15 @@ const ProductDetailsPage: React.FC = () => {
     if (typeof product.shopdetails === 'string') {
       try {
         const parsed = JSON.parse(product.shopdetails);
-        shopdetails = typeof parsed === 'string' ? parsed : product.shopdetails;
+        if (typeof parsed === 'object' && parsed !== null) {
+          const parts = [];
+          if (parsed.address) parts.push(parsed.address);
+          if (parsed.phone) parts.push(parsed.phone);
+          if (parsed.email) parts.push(parsed.email);
+          shopdetails = parts.length > 0 ? parts.join(' • ') : product.shopdetails;
+        } else {
+          shopdetails = typeof parsed === 'string' ? parsed : product.shopdetails;
+        }
       } catch {
         shopdetails = product.shopdetails; // Use as is if not valid JSON
       }

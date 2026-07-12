@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import ProductCard from '../../components/ProductCard';
 import { getProducts, Product, getSellers, Seller } from '../../services/api';
+import { formatShopDetails } from '../../utils/shopUtils';
 import { FaFilter, FaSort } from 'react-icons/fa';
 
 const ShopPage: React.FC = () => {
@@ -122,7 +123,7 @@ const ShopPage: React.FC = () => {
         {seller ? (
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">{seller.shopName}</h1>
-            <p className="text-gray-600 mb-4">{seller.shopDetails}</p>
+            <p className="text-gray-600 mb-4">{formatShopDetails(seller.shopDetails)}</p>
             <p className="text-sm text-gray-500">Owner: {seller.name}</p>
           </div>
         ) : !loading && (
