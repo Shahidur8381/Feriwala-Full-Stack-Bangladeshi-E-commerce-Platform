@@ -58,28 +58,37 @@ const HomePage: React.FC = () => {
           <div className="absolute top-20 right-40 w-16 h-16 border border-white rounded-full" style={{ animation: 'float 5s ease-in-out infinite 0.5s' }} />
         </div>
         
-        {/* Site Logo in Top Left Circle */}
+        {/* Desktop Logo - Floating */}
         <img 
           src="/feriwala-logo.png" 
           alt="FeriWala Logo" 
-          className="absolute top-10 left-10 w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl z-20"
+          className="hidden md:block absolute top-10 left-10 w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl z-20"
           style={{ animation: 'float 6s ease-in-out infinite' }} 
         />
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl animate-fade-in-up">
-            <div className="flex items-center gap-2 mb-4 bg-white/20 backdrop-blur-sm w-fit px-4 py-1.5 rounded-full text-white/90 shadow-sm border border-white/10 animate-fade-in-up">
+            {/* Mobile Logo - Static at Top */}
+            <div className="md:hidden flex justify-center mb-6">
+              <img 
+                src="/feriwala-logo.png" 
+                alt="FeriWala Logo" 
+                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 mb-4 bg-white/20 backdrop-blur-sm w-fit px-4 py-1.5 rounded-full text-white/90 shadow-sm border border-white/10 animate-fade-in-up mx-auto md:mx-0">
               🇧🇩 Bangladesh's #1 Online Shop
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight text-center md:text-left">
               Shop Smart, <br />
               <span className="text-yellow-300">Save Big</span> with FeriWala
             </h2>
-            <p className="text-green-100 text-lg mb-8 leading-relaxed">
+            <p className="text-green-100 text-lg mb-8 leading-relaxed text-center md:text-left">
               Discover thousands of products from trusted Bangladeshi sellers. 
               From electronics to fashion — everything you need, delivered to your door.
             </p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 justify-center md:justify-start">
               <Link href="/products" className="fw-btn bg-white text-green-800 hover:bg-green-50 font-bold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all">
                 🛍️ Shop Now
               </Link>
