@@ -60,7 +60,7 @@ const HomePage: React.FC = () => {
         
         {/* Site Logo in Top Left Circle */}
         <img 
-          src="https://chatgpt.com/backend-api/estuary/content?id=file_000000006998720b873dec6e680dc6ba&ts=495516&p=fs&cid=1&sig=5f569aaf42ae1b5570e8f119cfa53f60b751d6b03ce88fcffc97b03e36273ba9&v=0" 
+          src="/feriwala-logo.png" 
           alt="FeriWala Logo" 
           className="absolute top-10 left-10 w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl z-20"
           style={{ animation: 'float 6s ease-in-out infinite' }} 
