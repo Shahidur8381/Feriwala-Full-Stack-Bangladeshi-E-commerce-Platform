@@ -52,11 +52,20 @@ const HomePage: React.FC = () => {
     <Layout>
       {/* Hero Section */}
       <section className="fw-gradient-hero text-white py-12 md:py-20 relative overflow-hidden">
+        {/* Animated Background Elements */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-32 h-32 border-2 border-white rounded-full" style={{ animation: 'float 6s ease-in-out infinite' }} />
           <div className="absolute bottom-10 right-20 w-24 h-24 border-2 border-white rounded-full" style={{ animation: 'float 4s ease-in-out infinite 1s' }} />
           <div className="absolute top-20 right-40 w-16 h-16 border border-white rounded-full" style={{ animation: 'float 5s ease-in-out infinite 0.5s' }} />
         </div>
+        
+        {/* Site Logo in Top Left Circle */}
+        <img 
+          src="https://chatgpt.com/backend-api/estuary/content?id=file_000000006998720b873dec6e680dc6ba&ts=495516&p=fs&cid=1&sig=5f569aaf42ae1b5570e8f119cfa53f60b751d6b03ce88fcffc97b03e36273ba9&v=0" 
+          alt="FeriWala Logo" 
+          className="absolute top-10 left-10 w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl z-20"
+          style={{ animation: 'float 6s ease-in-out infinite' }} 
+        />
+
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl animate-fade-in-up">
             <div className="flex items-center gap-2 mb-4 bg-white/20 backdrop-blur-sm w-fit px-4 py-1.5 rounded-full text-white/90 shadow-sm border border-white/10 animate-fade-in-up">

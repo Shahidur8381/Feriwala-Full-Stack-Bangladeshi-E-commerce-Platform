@@ -92,7 +92,6 @@ const createPaymentRoutes = (db) => {
   // SSLCommerz redirects here on successful payment (POST with form data)
   router.post('/ssl-success', async (req, res) => {
     let { orderId } = req.query;
-    console.log('SSL Success Payload:', req.body);
     const { val_id, tran_id, status } = req.body;
 
     try {

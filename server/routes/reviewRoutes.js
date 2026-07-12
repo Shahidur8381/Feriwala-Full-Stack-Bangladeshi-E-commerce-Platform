@@ -8,7 +8,6 @@ const createReviewRoutes = (db) => {
   router.post('/', async (req, res) => {
     const { productId, orderId, rating, comment, customerEmail } = req.body;
 
-    console.log('Review submission data:', { productId, orderId, rating, comment, customerEmail });
 
     if (!productId || !orderId || !rating || !customerEmail) {
       return res.status(400).json({ error: 'Missing required fields (productId, orderId, rating, customerEmail)' });
@@ -220,7 +219,7 @@ async function updateProductRating(productId, pool) {
       `UPDATE products SET rating = $1, total_rating = $2 WHERE id = $3`,
       [parseFloat(averageRating).toFixed(1), totalReviews, productId]
     );
-    console.log(`Updated product ${productId} rating: ${averageRating} (${totalReviews} reviews)`);
+    `);
   } catch (err) {
     console.error('Error updating product rating:', err.message);
   }

@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import ProductCard from '../../components/ProductCard';
 import { getProducts, Product, getSellers, Seller } from '../../services/api';
-import { formatShopDetails } from '../../utils/shopUtils';
 import { FaFilter, FaSort } from 'react-icons/fa';
 
 const ShopPage: React.FC = () => {
@@ -15,11 +14,11 @@ const ShopPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
-  
+
   // Filter states
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedBrand, setSelectedBrand] = useState<string>('');
-  const [priceRange, setPriceRange] = useState<{min: number, max: number}>({min: 0, max: 1000});
+  const [priceRange, setPriceRange] = useState<{ min: number, max: number }>({ min: 0, max: 1000 });
   const [sortOption, setSortOption] = useState<string>('default');
   const [showFilters, setShowFilters] = useState(false);
 
@@ -34,16 +33,16 @@ const ShopPage: React.FC = () => {
           const shopProducts = allProducts.filter(product => product.seller_id === Number(id));
           setProducts(shopProducts);
           setFilteredProducts(shopProducts);
-            // Extract unique categories and brands
+          // Extract unique categories and brands
           const uniqueCategories = Array.from(new Set(shopProducts.map(p => p.category)));
           const uniqueBrands = Array.from(new Set(shopProducts.map(p => p.brand)));
           setCategories(uniqueCategories);
           setBrands(uniqueBrands);
-          
+
           // Find max price for range
           const maxPrice = Math.max(...shopProducts.map(p => p.price), 1000);
-          setPriceRange({min: 0, max: maxPrice});
-          
+          setPriceRange({ min: 0, max: maxPrice });
+
           // Fetch seller information
           const sellers = await getSellers();
           const shopInfo = sellers.find(s => s.id === Number(id));
@@ -64,25 +63,25 @@ const ShopPage: React.FC = () => {
   // Apply filters and sorting
   useEffect(() => {
     if (products.length === 0) return;
-    
+
     let result = [...products];
-    
+
     // Apply category filter
     if (selectedCategory) {
       result = result.filter(p => p.category === selectedCategory);
     }
-    
+
     // Apply brand filter
     if (selectedBrand) {
       result = result.filter(p => p.brand === selectedBrand);
     }
-    
+
     // Apply price range filter
     result = result.filter(p => {
       const price = p.discount > 0 ? p.final_price : p.price;
       return price >= priceRange.min && price <= priceRange.max;
     });
-    
+
     // Apply sorting
     switch (sortOption) {
       case 'price-asc':
@@ -106,14 +105,14 @@ const ShopPage: React.FC = () => {
         // Default sorting (no specific order)
         break;
     }
-    
+
     setFilteredProducts(result);
   }, [products, selectedCategory, selectedBrand, priceRange, sortOption]);
 
   const resetFilters = () => {
     setSelectedCategory('');
     setSelectedBrand('');
-    setPriceRange({min: 0, max: Math.max(...products.map(p => p.price), 1000)});
+    setPriceRange({ min: 0, max: Math.max(...products.map(p => p.price), 1000) });
     setSortOption('default');
   };
 
@@ -123,7 +122,7 @@ const ShopPage: React.FC = () => {
         {seller ? (
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">{seller.shopName}</h1>
-            <p className="text-gray-600 mb-4">{formatShopDetails(seller.shopDetails)}</p>
+            <p className="text-gray-600 mb-4">{seller.shopDetails}</p>
             <p className="text-sm text-gray-500">Owner: {seller.name}</p>
           </div>
         ) : !loading && (
@@ -133,14 +132,14 @@ const ShopPage: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Shop Products</h2>
           <div className="flex space-x-4">
-            <button 
+            <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
             >
               <FaFilter />
               <span>Filters</span>
             </button>
-            
+
             <select
               value={sortOption}
               onChange={(e) => setSortOption(e.target.value)}
@@ -153,7 +152,7 @@ const ShopPage: React.FC = () => {
             </select>
           </div>
         </div>
-        
+
         {showFilters && (
           <div className="bg-gray-50 p-6 rounded-lg mb-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -170,7 +169,7 @@ const ShopPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Brand</label>
                 <select
@@ -184,7 +183,7 @@ const ShopPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Price Range: ${priceRange.min} - ${priceRange.max}
@@ -195,7 +194,7 @@ const ShopPage: React.FC = () => {
                     min="0"
                     max={Math.max(...products.map(p => p.price), 1000)}
                     value={priceRange.min}
-                    onChange={(e) => setPriceRange({...priceRange, min: Number(e.target.value)})}
+                    onChange={(e) => setPriceRange({ ...priceRange, min: Number(e.target.value) })}
                     className="w-full"
                   />
                   <input
@@ -203,13 +202,13 @@ const ShopPage: React.FC = () => {
                     min="0"
                     max={Math.max(...products.map(p => p.price), 1000)}
                     value={priceRange.max}
-                    onChange={(e) => setPriceRange({...priceRange, max: Number(e.target.value)})}
+                    onChange={(e) => setPriceRange({ ...priceRange, max: Number(e.target.value) })}
                     className="w-full"
                   />
                 </div>
               </div>
             </div>
-            
+
             <div className="flex justify-end mt-4">
               <button
                 onClick={resetFilters}
@@ -237,8 +236,8 @@ const ShopPage: React.FC = () => {
           <div className="text-center py-12">
             <h2 className="text-2xl font-semibold mb-4">No products found</h2>
             <p className="text-gray-600">This shop doesn't have any products yet</p>
-            <button 
-              onClick={() => router.push('/products')} 
+            <button
+              onClick={() => router.push('/products')}
               className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
             >
               Browse All Products

@@ -7,17 +7,14 @@ const supabase = createClient(
 );
 
 export default async function verifySellerJWT(req, res, next) {
-  console.log('Running Supabase Auth verification middleware');
   
   const authHeader = req.headers.authorization || req.headers.Authorization;
   if (!authHeader) {
-    console.log('No authorization header found');
     return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
   }
 
   const token = authHeader.split(' ')[1];
   if (!token) {
-    console.log('No token found in authorization header');
     return res.status(401).json({ success: false, message: 'Access denied. Invalid token format.' });
   }
 
@@ -30,7 +27,6 @@ export default async function verifySellerJWT(req, res, next) {
       return res.status(401).json({ success: false, message: 'Invalid or expired token.' });
     }
     
-    console.log('Token successfully verified for auth_id:', user.id);
     
     // Find the local seller profile using the Supabase auth_id
     db.get('SELECT * FROM sellers WHERE auth_id = ? OR email = ?', [user.id, user.email], (err, seller) => {

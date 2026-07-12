@@ -99,13 +99,13 @@ const ProductDetailsPage: React.FC = () => {
         try {
           const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${id}`);
           setProduct(response.data);
-          
+
           // Fetch reviews and review summary
           const [reviewsResponse, summaryResponse] = await Promise.all([
             axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/product/${id}`),
             axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/product/${id}/summary`)
           ]);
-          
+
           setReviews(reviewsResponse.data);
           setReviewSummary(summaryResponse.data);
 
@@ -113,22 +113,22 @@ const ProductDetailsPage: React.FC = () => {
           if (response.data.discount > 0 && response.data.discount_validity) {
             const validityDate = new Date(response.data.discount_validity);
             const today = new Date();
-            
+
             // Check if discount is still valid
             const isValid = validityDate > today;
             setIsDiscountValid(isValid);
-            
+
             // Calculate remaining time
             if (isValid) {
               const updateRemainingTime = () => {
                 const now = new Date();
                 const diffTime = validityDate.getTime() - now.getTime();
-                
+
                 if (diffTime <= 0) {
                   setIsDiscountValid(false);
                   return;
                 }
-                
+
                 // Calculate time components
                 const seconds = Math.floor((diffTime / 1000) % 60);
                 const minutes = Math.floor((diffTime / (1000 * 60)) % 60);
@@ -136,16 +136,16 @@ const ProductDetailsPage: React.FC = () => {
                 const days = Math.floor((diffTime / (1000 * 60 * 60 * 24)) % 30);
                 const months = Math.floor((diffTime / (1000 * 60 * 60 * 24 * 30)) % 12);
                 const years = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30 * 12));
-                
+
                 setRemainingTime({ years, months, days, hours, minutes, seconds });
               };
-              
+
               // Initial update
               updateRemainingTime();
-              
+
               // Update every second
               const timer = setInterval(updateRemainingTime, 1000);
-              
+
               // Cleanup timer on unmount
               return () => clearInterval(timer);
             }
@@ -213,8 +213,8 @@ const ProductDetailsPage: React.FC = () => {
         <div className="container mx-auto px-4 py-8 text-center">
           <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
           <p>The product you are looking for does not exist or has been removed.</p>
-          <button 
-            onClick={() => router.push('/')} 
+          <button
+            onClick={() => router.push('/')}
             className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
           >
             Back to Home
@@ -259,15 +259,7 @@ const ProductDetailsPage: React.FC = () => {
     if (typeof product.shopdetails === 'string') {
       try {
         const parsed = JSON.parse(product.shopdetails);
-        if (typeof parsed === 'object' && parsed !== null) {
-          const parts = [];
-          if (parsed.address) parts.push(parsed.address);
-          if (parsed.phone) parts.push(parsed.phone);
-          if (parsed.email) parts.push(parsed.email);
-          shopdetails = parts.length > 0 ? parts.join(' • ') : product.shopdetails;
-        } else {
-          shopdetails = typeof parsed === 'string' ? parsed : product.shopdetails;
-        }
+        shopdetails = typeof parsed === 'string' ? parsed : product.shopdetails;
       } catch {
         shopdetails = product.shopdetails; // Use as is if not valid JSON
       }
@@ -277,8 +269,8 @@ const ProductDetailsPage: React.FC = () => {
   }
   // Calculate average rating - use database value if available, otherwise legacy
   const ratingValues = Object.values(ratingObj);
-  const legacyRating = ratingValues.length > 0 
-    ? ratingValues.reduce((sum: number, val: any) => sum + Number(val), 0) / ratingValues.length 
+  const legacyRating = ratingValues.length > 0
+    ? ratingValues.reduce((sum: number, val: any) => sum + Number(val), 0) / ratingValues.length
     : 0;
   const averageRating = reviewSummary.averageRating > 0 ? reviewSummary.averageRating : legacyRating;
 
@@ -287,16 +279,16 @@ const ProductDetailsPage: React.FC = () => {
   // Format remaining time as string
   const formatRemainingTime = () => {
     const { years, months, days, hours, minutes, seconds } = remainingTime;
-    
+
     let timeString = '';
-    
+
     if (years > 0) timeString += `${years} year${years !== 1 ? 's' : ''} `;
     if (months > 0) timeString += `${months} month${months !== 1 ? 's' : ''} `;
     if (days > 0) timeString += `${days} day${days !== 1 ? 's' : ''} `;
     if (hours > 0) timeString += `${hours} hour${hours !== 1 ? 's' : ''} `;
     if (minutes > 0) timeString += `${minutes} minute${minutes !== 1 ? 's' : ''} `;
     if (seconds > 0) timeString += `${seconds} second${seconds !== 1 ? 's' : ''}`;
-    
+
     return timeString.trim();
   };
   const handleReviewSubmit = async () => {
@@ -308,7 +300,7 @@ const ProductDetailsPage: React.FC = () => {
     setSubmittingReview(true);
     try {
       let response;
-      
+
       if (isEditingReview && existingReview) {
         // Update existing review
         response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/${existingReview.id}`, {
@@ -321,17 +313,18 @@ const ProductDetailsPage: React.FC = () => {
             comment: reviewForm.comment,
             customerEmail: user?.emailAddresses?.[0]?.emailAddress
           }),
-        });      } else {
+        });
+      } else {
         // Submit new review - need to find an order ID for this product
         try {
           const ordersResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/user/${user?.emailAddresses?.[0]?.emailAddress}`);
-          
+
           if (!ordersResponse.ok) {
             throw new Error(`Failed to fetch orders: ${ordersResponse.status} ${ordersResponse.statusText}`);
           }
-          
+
           const orders = await ordersResponse.json();
-          
+
           // Find an order that contains this product
           let orderId = null;
           for (const order of orders) {
@@ -368,24 +361,24 @@ const ProductDetailsPage: React.FC = () => {
 
       if (response?.ok) {
         alert(isEditingReview ? 'Review updated successfully!' : 'Review submitted successfully!');
-        
+
         // Refresh reviews and summary
         const [reviewsResponse, summaryResponse] = await Promise.all([
           axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/product/${id}`),
           axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/product/${id}/summary`)
         ]);
-        
+
         setReviews(reviewsResponse.data);
         setReviewSummary(summaryResponse.data);
-        
+
         // Reset form and state
         setReviewForm({ rating: 0, comment: '' });
         setShowReviewForm(false);
         setIsEditingReview(false);
-        
+
         // Update canReview state
         setCanReview(prev => ({ ...prev, hasReviewed: true, canReview: false }));
-        
+
         // Fetch updated existing review
         if (!isEditingReview) {
           const newReviewResponse = await axios.get(
@@ -400,7 +393,8 @@ const ProductDetailsPage: React.FC = () => {
             rating: reviewForm.rating,
             comment: reviewForm.comment
           });
-        }      } else {
+        }
+      } else {
         let errorMessage = 'Failed to submit review';
         try {
           const errorData = await response?.json();
@@ -450,27 +444,27 @@ const ProductDetailsPage: React.FC = () => {
     setReviewForm({ rating: 0, comment: '' });
     setShowReviewForm(false);
     setIsEditingReview(false);
-  };  const handleBuyNow = () => {
+  }; const handleBuyNow = () => {
     if (!product) return;
-    
+
     // Check if requested quantity is available
     if (quantity > product.stock) {
       alert(`Only ${product.stock} items available in stock.`);
       return;
     }
-    
+
     if (product.stock === 0) {
       alert('This product is out of stock.');
       return;
     }
-    
+
     try {
       // Add to cart first
       addToCart(product, quantity);
-      
+
       // Show success feedback
       alert(`${quantity} ${product.title} added to cart. Redirecting to checkout...`);
-      
+
       // Redirect to checkout
       router.push('/checkout');
     } catch (error) {
@@ -485,9 +479,8 @@ const ProductDetailsPage: React.FC = () => {
         {[1, 2, 3, 4, 5].map((star) => (
           <FaStar
             key={star}
-            className={`text-2xl cursor-pointer mr-1 ${
-              star <= reviewForm.rating ? 'text-yellow-500' : 'text-gray-300'
-            }`}
+            className={`text-2xl cursor-pointer mr-1 ${star <= reviewForm.rating ? 'text-yellow-500' : 'text-gray-300'
+              }`}
             onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
           />
         ))}
@@ -504,10 +497,10 @@ const ProductDetailsPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Product Image */}
           <div className="relative h-96 rounded-lg overflow-hidden">
-            <Image 
-              src={product.image 
+            <Image
+              src={product.image
                 ? (product.image.startsWith('http') ? product.image : `${process.env.NEXT_PUBLIC_API_URL}${product.image}`)
-                : '/imageWhenNoImage/NoImage.jpg'} 
+                : '/imageWhenNoImage/NoImage.jpg'}
               alt={product.title}
               fill={true}
               sizes="(max-width: 768px) 100vw, 50vw"
@@ -519,7 +512,7 @@ const ProductDetailsPage: React.FC = () => {
           {/* Product Details */}
           <div className="animate-fade-in-up delay-1">
             <h1 className="text-3xl font-bold mb-2 text-gray-800">{product.title}</h1>
-              <div className="flex items-center mb-4">
+            <div className="flex items-center mb-4">
               <div className="flex items-center mr-4">
                 <span className="text-yellow-500 mr-1">★</span>
                 <span className="text-lg font-semibold">{averageRating.toFixed(1)}</span>
@@ -579,10 +572,10 @@ const ProductDetailsPage: React.FC = () => {
                 <h3 className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Product Stats</h3>
                 <div className="space-y-1 text-sm text-gray-700 font-medium">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Stock:</span> 
+                    <span className="text-gray-500">Stock:</span>
                     <span className={product.stock > 0 ? "text-green-600" : "text-red-500"}>{product.stock > 0 ? `${product.stock} left` : 'Out of stock'}</span>
                   </div>                <div className="flex justify-between">
-                    <span className="text-gray-500">Sold:</span> 
+                    <span className="text-gray-500">Sold:</span>
                     <span>{formatSold(product.sold)}</span>
                   </div>
                 </div>
@@ -592,11 +585,11 @@ const ProductDetailsPage: React.FC = () => {
                 <h3 className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Delivery Charge</h3>
                 <div className="space-y-1 text-sm text-gray-700 font-medium">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Inside City:</span> 
+                    <span className="text-gray-500">Inside City:</span>
                     <span>৳{product.deliverycharge_inside}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Outside City:</span> 
+                    <span className="text-gray-500">Outside City:</span>
                     <span>৳{product.deliverycharge_outside}</span>
                   </div>
                 </div>
@@ -604,16 +597,16 @@ const ProductDetailsPage: React.FC = () => {
             </div>            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
               <div className="flex items-center">
-                <button 
+                <button
                   onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
                   disabled={quantity <= 1}
                   className="bg-gray-200 px-3 py-1 rounded-l-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   -
                 </button>
-                <input 
-                  type="number" 
-                  min="1" 
+                <input
+                  type="number"
+                  min="1"
                   max={product.stock}
                   value={quantity}
                   onChange={(e) => {
@@ -622,7 +615,7 @@ const ProductDetailsPage: React.FC = () => {
                   }}
                   className="w-16 text-center border-t border-b border-gray-300 py-1"
                 />
-                <button 
+                <button
                   onClick={() => setQuantity(prev => Math.min(product.stock, prev + 1))}
                   disabled={quantity >= product.stock}
                   className="bg-gray-200 px-3 py-1 rounded-r-lg disabled:opacity-50 disabled:cursor-not-allowed"
@@ -636,7 +629,7 @@ const ProductDetailsPage: React.FC = () => {
                 </p>
               )}
             </div>            <div className="flex space-x-4">
-              <button 
+              <button
                 onClick={() => {
                   if (product.stock === 0) {
                     alert('This product is out of stock.');
@@ -655,22 +648,20 @@ const ProductDetailsPage: React.FC = () => {
                   }
                 }}
                 disabled={product.stock === 0}
-                className={`px-6 py-2 rounded-lg ${
-                  product.stock === 0 
-                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                className={`px-6 py-2 rounded-lg ${product.stock === 0
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
+                  }`}
               >
                 {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
               </button>
-              <button 
+              <button
                 onClick={handleBuyNow}
                 disabled={product.stock === 0}
-                className={`px-6 py-2 rounded-lg ${
-                  product.stock === 0 
-                    ? 'border border-gray-400 text-gray-400 cursor-not-allowed' 
+                className={`px-6 py-2 rounded-lg ${product.stock === 0
+                    ? 'border border-gray-400 text-gray-400 cursor-not-allowed'
                     : 'border border-blue-600 text-blue-600 hover:bg-blue-50'
-                }`}
+                  }`}
               >
                 {product.stock === 0 ? 'Out of Stock' : 'Buy Now'}
               </button>
@@ -681,7 +672,7 @@ const ProductDetailsPage: React.FC = () => {
         {/* Reviews Section */}
         <div className="mt-12">
           <h2 className="text-2xl font-bold mb-6">Customer Reviews</h2>
-          
+
           {/* Review Summary */}
           {reviewSummary.totalReviews > 0 && (
             <div className="bg-gray-50 p-6 rounded-lg mb-6">
@@ -694,11 +685,10 @@ const ProductDetailsPage: React.FC = () => {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <span
                         key={star}
-                        className={`text-xl ${
-                          star <= Math.round(reviewSummary.averageRating)
+                        className={`text-xl ${star <= Math.round(reviewSummary.averageRating)
                             ? 'text-yellow-500'
                             : 'text-gray-300'
-                        }`}
+                          }`}
                       >
                         ★
                       </span>
@@ -709,7 +699,7 @@ const ProductDetailsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Rating Breakdown */}
               <div className="space-y-2">
                 {[
@@ -769,9 +759,8 @@ const ProductDetailsPage: React.FC = () => {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <span
                             key={star}
-                            className={`text-sm ${
-                              star <= existingReview.rating ? 'text-yellow-500' : 'text-gray-300'
-                            }`}
+                            className={`text-sm ${star <= existingReview.rating ? 'text-yellow-500' : 'text-gray-300'
+                              }`}
                           >
                             ★
                           </span>
@@ -816,7 +805,7 @@ const ProductDetailsPage: React.FC = () => {
                 <h3 className="text-lg font-semibold mb-4">
                   {isEditingReview ? 'Edit Your Review' : 'Write a Review'}
                 </h3>
-                
+
                 {/* Star Rating */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -847,8 +836,8 @@ const ProductDetailsPage: React.FC = () => {
                     disabled={submittingReview || !reviewForm.rating || !reviewForm.comment.trim()}
                     className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
-                    {submittingReview 
-                      ? (isEditingReview ? 'Updating...' : 'Submitting...') 
+                    {submittingReview
+                      ? (isEditingReview ? 'Updating...' : 'Submitting...')
                       : (isEditingReview ? 'Update Review' : 'Submit Review')
                     }
                   </button>
@@ -871,9 +860,8 @@ const ProductDetailsPage: React.FC = () => {
                       {[1, 2, 3, 4, 5].map((star) => (
                         <span
                           key={star}
-                          className={`text-sm ${
-                            star <= review.rating ? 'text-yellow-500' : 'text-gray-300'
-                          }`}
+                          className={`text-sm ${star <= review.rating ? 'text-yellow-500' : 'text-gray-300'
+                            }`}
                         >
                           ★
                         </span>

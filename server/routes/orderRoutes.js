@@ -72,7 +72,6 @@ const createOrderRoutes = (db) => {
       for (const sql of extraCols) {
         try { await pool.query(sql); } catch (_) {}
       }
-      console.log('Orders table checked/created successfully.');
 
       await pool.query(`
         CREATE TABLE IF NOT EXISTS order_items (
@@ -85,7 +84,6 @@ const createOrderRoutes = (db) => {
           image TEXT
         )
       `);
-      console.log('Order_items table checked/created successfully.');
 
       await pool.query(`
         CREATE TABLE IF NOT EXISTS reviews (
@@ -99,7 +97,6 @@ const createOrderRoutes = (db) => {
         )
       `);
       await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS customeremail TEXT`);
-      console.log('Reviews table checked/created successfully.');
 
       await pool.query(`
         CREATE TABLE IF NOT EXISTS customers (
@@ -112,7 +109,6 @@ const createOrderRoutes = (db) => {
           createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      console.log('Customers table checked/created successfully.');
     } catch (err) {
       console.error('Error initializing order tables:', err.message);
     }

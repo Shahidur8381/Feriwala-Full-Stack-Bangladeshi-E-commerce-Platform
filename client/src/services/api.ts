@@ -121,7 +121,6 @@ export const getNewestProducts = async (limit: number = 16): Promise<Product[]> 
 export const getSellers = async (): Promise<Seller[]> => {
   try {
     const response = await axios.get(`${API_URL}/api/sellers`);
-    console.log('Sellers API response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching sellers:', error);
