@@ -83,85 +83,214 @@ const CartPage: React.FC = () => {
           {/* Cart Items */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {cartItems.map(item => {
-                    const itemPrice = item.discount > 0 && new Date(item.discount_validity) > new Date() 
-                      ? item.final_price 
-                      : item.price;
-                    const itemTotal = itemPrice * item.quantity;
-                    
-                    return (                      <tr key={item.id} className={`${
-                        item.stock === 0 ? 'bg-red-50' : 
-                        item.quantity >= item.stock ? 'bg-orange-50' : ''
-                      }`}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="h-16 w-16 relative flex-shrink-0">
-                              <Image 
-                                src={item.image 
-                                  ? (item.image.startsWith('http') ? item.image : `${process.env.NEXT_PUBLIC_API_URL}${item.image}`)
-                                  : '/imageWhenNoImage/NoImage.jpg'} 
-                                alt={item.title}
-                                fill={true}
-                                sizes="64px"
-                                style={{ objectFit: 'cover' }}
-                                className="rounded-md"
-                              />
+              {/* Desktop View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {cartItems.map(item => {
+                      const itemPrice = item.discount > 0 && new Date(item.discount_validity) > new Date() 
+                        ? item.final_price 
+                        : item.price;
+                      
+                      const itemTotal = itemPrice * item.quantity;
+                      
+                      return (
+                        <tr key={item.id} className={`${
+                          item.stock === 0 ? 'bg-red-50' : 
+                          item.quantity >= item.stock ? 'bg-orange-50' : ''
+                        }`}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-16 w-16 relative flex-shrink-0">
+                                <Image 
+                                  src={item.image 
+                                    ? (item.image.startsWith('http') ? item.image : `${process.env.NEXT_PUBLIC_API_URL}${item.image}`)
+                                    : '/imageWhenNoImage/NoImage.jpg'} 
+                                  alt={item.title}
+                                  fill={true}
+                                  sizes="64px"
+                                  style={{ objectFit: 'cover' }}
+                                  className="rounded-md"
+                                />
+                              </div>
+                              <div className="ml-4">
+                                <Link href={`/product/${item.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600">
+                                  {item.title}
+                                </Link>
+                                {item.stock === 0 && (
+                                  <div className="text-xs text-red-600 font-medium mt-1">
+                                    ❌ Out of stock
+                                  </div>
+                                )}
+                                {item.stock > 0 && item.quantity >= item.stock && (
+                                  <div className="text-xs text-orange-600 font-medium mt-1">
+                                    ⚠️ Maximum quantity reached
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="ml-4">
-                              <Link href={`/product/${item.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600">
-                                {item.title}
-                              </Link>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {item.discount > 0 && new Date(item.discount_validity) > new Date() ? (
+                              <div>
+                                <span className="text-gray-500 line-through text-xs">${item.price}</span>
+                                <span className="text-blue-600 ml-1">${item.final_price}</span>
+                              </div>
+                            ) : (
+                              <span className="text-blue-600">${item.price}</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {item.stock === 0 ? (
+                              <div className="text-center">
+                                <div className="text-red-600 font-medium text-sm">Out of Stock</div>
+                                <button
+                                  onClick={() => removeFromCart(item.id)}
+                                  className="text-red-600 text-xs hover:underline mt-1"
+                                >
+                                  Remove from cart
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center">
+                                <button 
+                                  onClick={() => handleQuantityUpdate(item.id, item.quantity - 1, item.stock)}
+                                  className="bg-gray-200 p-1 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  disabled={item.quantity <= 1}
+                                  title={item.quantity <= 1 ? "Minimum quantity is 1" : "Decrease quantity"}
+                                >
+                                  <FaMinus className="text-xs" />
+                                </button>
+                                <input 
+                                  type="number" 
+                                  min="1" 
+                                  max={item.stock}
+                                  value={item.quantity}
+                                  onChange={(e) => {
+                                    const newQuantity = parseInt(e.target.value) || 1;
+                                    handleQuantityUpdate(item.id, newQuantity, item.stock);
+                                  }}
+                                  className="w-16 text-center border border-gray-300 mx-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  title={`Maximum available: ${item.stock}`}
+                                />
+                                <button 
+                                  onClick={() => handleQuantityUpdate(item.id, item.quantity + 1, item.stock)}
+                                  className="bg-gray-200 p-1 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  disabled={item.quantity >= item.stock}
+                                  title={item.quantity >= item.stock ? `Only ${item.stock} available in stock` : "Increase quantity"}
+                                >
+                                  <FaPlus className="text-xs" />
+                                </button>
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-500 mt-1">
                               {item.stock === 0 && (
-                                <div className="text-xs text-red-600 font-medium mt-1">
-                                  ❌ Out of stock
-                                </div>
+                                <span className="text-red-600 font-medium">
+                                  This item is currently unavailable
+                                </span>
+                              )}
+                              {item.stock > 0 && item.stock <= 5 && (
+                                <span className="text-orange-600 font-medium">
+                                  ⚠️ Only {item.stock} left in stock
+                                </span>
+                              )}
+                              {item.stock > 5 && (
+                                <span>Stock: {item.stock} available</span>
                               )}
                               {item.stock > 0 && item.quantity >= item.stock && (
-                                <div className="text-xs text-orange-600 font-medium mt-1">
-                                  ⚠️ Maximum quantity reached
+                                <div className="text-red-600 font-medium">
+                                  Max quantity reached
                                 </div>
                               )}
                             </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-blue-600 font-medium">
+                            ${itemTotal.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button 
+                              onClick={() => removeFromCart(item.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <FaTrash />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile View */}
+              <div className="md:hidden divide-y divide-gray-200">
+                {cartItems.map(item => {
+                  const itemPrice = item.discount > 0 && new Date(item.discount_validity) > new Date() 
+                    ? item.final_price 
+                    : item.price;
+                  
+                  const itemTotal = itemPrice * item.quantity;
+                  
+                  return (
+                    <div key={item.id} className={`p-4 ${
+                      item.stock === 0 ? 'bg-red-50' : 
+                      item.quantity >= item.stock ? 'bg-orange-50' : ''
+                    }`}>
+                      <div className="flex gap-4">
+                        <div className="h-20 w-20 relative flex-shrink-0">
+                          <Image 
+                            src={item.image 
+                              ? (item.image.startsWith('http') ? item.image : `${process.env.NEXT_PUBLIC_API_URL}${item.image}`)
+                              : '/imageWhenNoImage/NoImage.jpg'} 
+                            alt={item.title}
+                            fill={true}
+                            sizes="80px"
+                            style={{ objectFit: 'cover' }}
+                            className="rounded-md"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <Link href={`/product/${item.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 line-clamp-2">
+                            {item.title}
+                          </Link>
+                          
+                          <div className="mt-1">
+                            {item.discount > 0 && new Date(item.discount_validity) > new Date() ? (
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-blue-600 font-medium">${item.final_price}</span>
+                                <span className="text-gray-500 line-through text-xs">${item.price}</span>
+                              </div>
+                            ) : (
+                              <span className="text-blue-600 font-medium">${item.price}</span>
+                            )}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {item.discount > 0 && new Date(item.discount_validity) > new Date() ? (
-                            <div>
-                              <span className="text-gray-500 line-through text-xs">${item.price}</span>
-                              <span className="text-blue-600 ml-1">${item.final_price}</span>
-                            </div>
-                          ) : (
-                            <span className="text-blue-600">${item.price}</span>
+                          
+                          {item.stock === 0 && (
+                            <div className="text-xs text-red-600 font-medium mt-1">❌ Out of stock</div>
                           )}
-                        </td>                        <td className="px-6 py-4 whitespace-nowrap">
-                          {item.stock === 0 ? (
-                            <div className="text-center">
-                              <div className="text-red-600 font-medium text-sm">Out of Stock</div>
-                              <button
-                                onClick={() => removeFromCart(item.id)}
-                                className="text-red-600 text-xs hover:underline mt-1"
-                              >
-                                Remove from cart
-                              </button>
-                            </div>
-                          ) : (
+                          {item.stock > 0 && item.stock <= 5 && (
+                            <div className="text-xs text-orange-600 font-medium mt-1">⚠️ Only {item.stock} left</div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="flex items-center">
+                          {item.stock > 0 ? (
                             <div className="flex items-center">
                               <button 
                                 onClick={() => handleQuantityUpdate(item.id, item.quantity - 1, item.stock)}
-                                className="bg-gray-200 p-1 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="bg-gray-200 p-2 rounded-l hover:bg-gray-300 disabled:opacity-50"
                                 disabled={item.quantity <= 1}
-                                title={item.quantity <= 1 ? "Minimum quantity is 1" : "Decrease quantity"}
                               >
                                 <FaMinus className="text-xs" />
                               </button>
@@ -174,56 +303,35 @@ const CartPage: React.FC = () => {
                                   const newQuantity = parseInt(e.target.value) || 1;
                                   handleQuantityUpdate(item.id, newQuantity, item.stock);
                                 }}
-                                className="w-16 text-center border border-gray-300 mx-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                title={`Maximum available: ${item.stock}`}
+                                className="w-12 text-center border-y border-gray-200 py-1 focus:outline-none"
                               />
                               <button 
                                 onClick={() => handleQuantityUpdate(item.id, item.quantity + 1, item.stock)}
-                                className="bg-gray-200 p-1 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="bg-gray-200 p-2 rounded-r hover:bg-gray-300 disabled:opacity-50"
                                 disabled={item.quantity >= item.stock}
-                                title={item.quantity >= item.stock ? `Only ${item.stock} available in stock` : "Increase quantity"}
                               >
                                 <FaPlus className="text-xs" />
                               </button>
                             </div>
+                          ) : (
+                            <div className="text-red-600 font-medium text-sm">Unavailable</div>
                           )}
-                          <div className="text-xs text-gray-500 mt-1">
-                            {item.stock === 0 && (
-                              <span className="text-red-600 font-medium">
-                                This item is currently unavailable
-                              </span>
-                            )}
-                            {item.stock > 0 && item.stock <= 5 && (
-                              <span className="text-orange-600 font-medium">
-                                ⚠️ Only {item.stock} left in stock
-                              </span>
-                            )}
-                            {item.stock > 5 && (
-                              <span>Stock: {item.stock} available</span>
-                            )}
-                            {item.stock > 0 && item.quantity >= item.stock && (
-                              <div className="text-red-600 font-medium">
-                                Max quantity reached
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-blue-600 font-medium">
-                          ${itemTotal.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                          <span className="font-bold text-blue-600">${itemTotal.toFixed(2)}</span>
                           <button 
                             onClick={() => removeFromCart(item.id)}
-                            className="text-red-600 hover:text-red-800"
+                            className="text-red-500 hover:text-red-700 p-2"
                           >
                             <FaTrash />
                           </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
               
               <div className="px-6 py-4 bg-gray-50">
                 <button 
